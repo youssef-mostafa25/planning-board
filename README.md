@@ -21,7 +21,8 @@ short config in chat (head and target branch, title, draft, merge method, and la
 or reviewers when the repo shows them), each part in its own block for copying, plus the
 next branch name. The PR body is written on the board's Stack tab with a Copy button,
 not in chat. PR 1's body opens with an overview of the whole stack and what each PR is
-responsible for. It never branches, commits, pushes or opens the PR itself. The board
+responsible for. A PR stays a draft until every PR it builds on is merge-ready or the whole
+stack is complete, and the agent tells you when to mark one ready for review. It never branches, commits, pushes or opens the PR itself. The board
 gets a Stack tab with each PR's progress, branches and config.
 
 When `main` moves, the stack is left alone unless a read-only probe shows a conflict,

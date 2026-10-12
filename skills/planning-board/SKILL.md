@@ -317,7 +317,7 @@ Title
 Guard empty token lists in the API layer
 ```
 Body: on the board, Stack tab → PR 2 → PR config → Copy
-Draft: no · Merge method: merge commit · Labels: `bug` · Reviewers: (only what the repo shows; else leave out)
+Draft: yes (PR 1 is still in review) · Merge method: merge commit · Labels: `bug` · Reviewers: (only what the repo shows; else leave out)
 
 Next branch: PR 3 targets this one
 ```
@@ -345,14 +345,28 @@ git switch -c auth-cleanup/3-ui-states
   HTML-escaped (`&` `<` `>`) so the copied text is the exact Markdown. End it with any PR
   attribution line the session requires.
 - **Labels and reviewers**: only when the repo shows them, through existing labels,
-  CODEOWNERS or the user's past PRs. Never invent one. **Draft**: say yes or no; the user
-  decides. **Merge method**: merge commit, so the PRs above need no propagation run
-  when it lands (see *When the base moves*).
+  CODEOWNERS or the user's past PRs. Never invent one. **Merge method**: merge commit,
+  so the PRs above need no propagation run when it lands (see *When the base moves*).
+- **Draft: yes by default.** It is `no` only when one of these holds, and the reason goes
+  next to it:
+  1. **Every PR it builds on is merge-ready**: PR 1 … PR N-1 can each merge into its
+     target as it stands, with nothing left to change. Their reviews are done (the user
+     says so, or a read-only `gh pr view` shows approved with no changes requested) and
+     the base probe is clean. PR 1 builds on nothing, so it is `no` at its handoff.
+  2. **The whole stack is complete**: every PR has had its handoff, so the stack can
+     be merged in one go.
+
+  Otherwise it is `yes`, naming what blocks it ("PR 1 is still in review"). **Re-check
+  it when things move**: a PR it builds on gets approved or merged, a sync changes one, or the
+  last PR's handoff completes the stack. When a PR can leave draft, say so in chat with
+  the command in its own block (`gh pr ready <number>`, which the user runs) and update
+  its Draft field on the board. A PR whose base PR gets new changes requested goes back
+  to `yes`; tell the user (`gh pr ready <number> --undo`).
 - **Next branch**: give the name and the create command, and say the user should commit
   this PR's work first. Leave it out for the last PR.
 
 In the same turn, set the PR to `Ready` on the Stack tab, fill its whole config there
-(the body included), open its config section, and republish before you reply, so the
+(the body included), and republish before you reply, so the
 board link already has the body when the user reads the reply. When
 the user says they opened it, record the number and link. When it is merged, mark it
 `Merged`, ask which merge method was used, and follow *When the base moves* for the PR
@@ -500,6 +514,10 @@ the link once, in one line.
 - Creating a branch, committing, pushing or opening a PR yourself because a stack exists.
 - A PR's last job reviewed without the PR handoff in the same turn.
 - A PR body pasted into chat. It belongs on the Stack tab, behind its Copy button.
+- An `open` attribute on a PR config `<details>`. The page script expands only the last
+  completed PR's config; every other one stays collapsed.
+- Draft set to `no` while a PR it builds on still needs changes and the stack is not
+  complete, or left at `yes` after it became merge-ready without telling the user.
 - Rebasing or force-pushing a stack branch. Syncs are merges, through merge-assistant.
 - Syncing the stack because main moved, when the probe is clean and nothing needs it.
 - Skipping a propagation run's checks because "we already know what changed".
