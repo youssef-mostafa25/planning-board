@@ -358,7 +358,7 @@
   <div class="note">
     <h3>Stacked PRs — only because the user chose one</h3>
     <p>This board's jobs are split into a chain of PRs on the <em>Stack</em> tab, each targeting the branch of the one above it. Implement jobs in PR order. Before the first edit of a PR, check you are on its branch with a clean tree; if the previous PR's work is still uncommitted, stop and say so.</p>
-    <p>When a PR's last job is reviewed, give its <b>config in chat</b>, each part in its own block: head branch, target branch, title, body, draft, merge method (merge commit), and labels or reviewers only if the repo shows them. Add the <b>next branch name</b>, then fill the same config on the Stack tab. <b>You never branch, commit, push or open the PR yourself</b> unless the user says so, in words.</p>
+    <p>When a PR's last job is reviewed, write its <b>whole config on the Stack tab</b>, the <b>body</b> included, and republish. <b>The body never goes in chat</b>; it lives here behind its Copy button. In chat, give the short fields, each in its own block (head branch, target branch, title, draft, merge method, labels or reviewers only if the repo shows them), the <b>next branch name</b>, and a pointer to the body on this tab. <b>You never branch, commit, push or open the PR yourself</b> unless the user says so, in words.</p>
     <p><b>When the base moves, leave the stack alone</b> unless the base probe shows a conflict, the repo requires up-to-date branches, or a PR landed by squash or rebase merge. Then sync by <b>merging, never rebasing</b>, one link at a time, bottom-up, each through <code>youssef-skills:merge-assistant</code>: a full run for the base into PR 1, then a propagation run per PR above it. Every link is verified (dry-run, clean-but-dangerous scan, the PR's suite and its job-review checks) and committed by the user before the next starts.</p>
   </div>
 
@@ -423,12 +423,15 @@
      Per PR, the li class and the pill move together:
        p-planned / pill pr-planned  Planned     — no job approved yet
        p-prog    / pill pr-prog     In progress — its first job approved
-       p-ready   / pill pr-ready    Ready       — handoff given in chat
+       p-ready   / pill pr-ready    Ready       — config here (body included), short fields in chat
        p-opened  / pill pr-opened   Opened #n   — user opened it; link the title
        p-merged  / pill pr-merged   Merged
      Progress = jobs Fixed / jobs in the PR; set the bar width to the same fraction.
-     Config: fill at handoff, matching what was given in chat. HTML-escape the body
-     (& < >) inside the <pre>. Open the <details> of the PR that is Ready.
+     PR 1's body only: opens with "## Stack overview" (the whole stack, one line per PR),
+     then its own sections. Later PRs start at "## Summary".
+     Config: fill at handoff. The short fields match what was given in chat; the body is
+     written ONLY here, never in chat. HTML-escape it (& < >) inside the <pre> so Copy
+     gives the exact Markdown. Open the <details> of the PR that is Ready.
      Base line: the latest base probe ("N commits ahead of PR 1 · merges cleanly — no
      action needed"); add class "warn" to .probe when it reports a conflict.
      Sync line: the base commit the PR is synced with and the last sync (what was merged,
@@ -457,8 +460,16 @@
           <div class="cfg-row"><span class="cfg-k">Head branch</span><code class="cfg-v">topic/1-slug</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row"><span class="cfg-k">Target</span><code class="cfg-v">main</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row"><span class="cfg-k">Title</span><code class="cfg-v">PR title, as it will be opened</code><button class="copy" type="button">Copy</button></div>
-          <div class="cfg-row block"><span class="cfg-k">Body</span><button class="copy" type="button">Copy</button><pre class="cfg-v">## Summary
-One to three sentences.
+          <div class="cfg-row block"><span class="cfg-k">Body</span><button class="copy" type="button">Copy</button><pre class="cfg-v">## Stack overview
+Two or three sentences: what the whole stack does, and why it is split.
+
+1. **PR 1 — topic/1-slug (this PR):** its responsibility, in one line.
+2. **PR 2 — topic/2-slug:** its responsibility, in one line.
+
+---
+
+## Summary
+One to three sentences on this PR.
 
 ## Stack
 PR 1 of 2 — targets main. PR 2 (topic/2-slug) builds on this.

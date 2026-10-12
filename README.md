@@ -17,9 +17,11 @@ When the plan is big and splits cleanly, the agent may propose a **stacked PR**:
 jobs cut into an ordered chain of PRs, each targeting the branch below it, shown with
 the jobs in each PR and an ASCII drawing of the stack. You decide; without your yes
 there is no stack. When a PR's last job is reviewed, the agent gives you the PR's
-config in chat (head and target branch, title, body, draft, and labels or reviewers
-when the repo shows them), each part in its own block for copying, plus the next
-branch name. It never branches, commits, pushes or opens the PR itself. The board
+short config in chat (head and target branch, title, draft, merge method, and labels
+or reviewers when the repo shows them), each part in its own block for copying, plus the
+next branch name. The PR body is written on the board's Stack tab with a Copy button,
+not in chat. PR 1's body opens with an overview of the whole stack and what each PR is
+responsible for. It never branches, commits, pushes or opens the PR itself. The board
 gets a Stack tab with each PR's progress, branches and config.
 
 When `main` moves, the stack is left alone unless a read-only probe shows a conflict,

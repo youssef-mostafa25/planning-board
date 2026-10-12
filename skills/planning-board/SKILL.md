@@ -72,9 +72,9 @@ user says "start a job" / "take the next job"
                                                                     |
                                                     stacked and that was the PR's last job?
                                                                     v
-                                           9 PR HANDOFF: PR config + next branch name in
-                                             chat, Stack tab updated; branch check before
-                                             the next PR's first edit
+                                           9 PR HANDOFF: body on the Stack tab (copy button),
+                                             the short fields + next branch name in chat;
+                                             branch check before the next PR's first edit
 ```
 
 **Step 1 — investigate.** Read anything. Run read-only checks: greps, a throwaway probe
@@ -295,8 +295,11 @@ to sync. On older git, use merge-assistant's dry-run in a detached worktree inst
 
 ### PR handoff
 
-**In chat only**, unless the user asks for a file. Every part goes in its own fenced block
-so it can be copied alone:
+**The body goes on the board, never in chat.** Write the full PR body into the PR's
+config on the Stack tab, where its Copy button copies it, and republish. Do not paste the
+body into the response, not even a shortened one. Chat carries the short fields, each in
+its own fenced block so it can be copied alone, and points at the board for the body.
+Nothing goes in a file unless the user asks.
 
 ~~~text
 **PR 2 of 3 is ready: Guard empty token lists in the API layer**
@@ -313,11 +316,7 @@ Title
 ```
 Guard empty token lists in the API layer
 ```
-Body
-````markdown
-## Summary
-...
-````
+Body: on the board, Stack tab → PR 2 → PR config → Copy
 Draft: no · Merge method: merge commit · Labels: `bug` · Reviewers: (only what the repo shows; else leave out)
 
 Next branch: PR 3 targets this one
@@ -335,8 +334,16 @@ git switch -c auth-cleanup/3-ui-states
   (PR n of N; the PR it depends on, by number once the user has given it, else by branch;
   the PR that builds on it), *Changes* (per task: what and where, from the job reviews),
   *How to review* (read order), *Testing* (per task, the check and what it printed, plus
-  the whole-PR suite), *Not in this PR*. Wrap the body in a fence with more backticks than
-  any fence inside it. End it with any PR attribution line the session requires.
+  the whole-PR suite), *Not in this PR*.
+- **PR 1's body opens with the stack overview**, before its own sections. It is the
+  first PR a reviewer sees, so it explains the whole stack: a *Stack overview* section
+  with 2–3 sentences on what the stack does as a whole, then one line per PR giving its
+  number, branch and responsibility, with PR 1 marked "this PR". Then PR 1's own body
+  follows as usual. Later PRs keep only their own *Stack* line. If the cuts change after
+  PR 1 is opened, update the overview on the board and tell the user to edit PR 1.
+- Put the body in the PR's `pre.cfg-v` Body field,
+  HTML-escaped (`&` `<` `>`) so the copied text is the exact Markdown. End it with any PR
+  attribution line the session requires.
 - **Labels and reviewers**: only when the repo shows them, through existing labels,
   CODEOWNERS or the user's past PRs. Never invent one. **Draft**: say yes or no; the user
   decides. **Merge method**: merge commit, so the PRs above need no propagation run
@@ -344,7 +351,9 @@ git switch -c auth-cleanup/3-ui-states
 - **Next branch**: give the name and the create command, and say the user should commit
   this PR's work first. Leave it out for the last PR.
 
-In the same turn, set the PR to `Ready` on the Stack tab and fill its config there. When
+In the same turn, set the PR to `Ready` on the Stack tab, fill its whole config there
+(the body included), open its config section, and republish before you reply, so the
+board link already has the body when the user reads the reply. When
 the user says they opened it, record the number and link. When it is merged, mark it
 `Merged`, ask which merge method was used, and follow *When the base moves* for the PR
 above it. Later PR bodies then refer to it by number.
@@ -490,6 +499,7 @@ the link once, in one line.
   PR's work still uncommitted in the tree.
 - Creating a branch, committing, pushing or opening a PR yourself because a stack exists.
 - A PR's last job reviewed without the PR handoff in the same turn.
+- A PR body pasted into chat. It belongs on the Stack tab, behind its Copy button.
 - Rebasing or force-pushing a stack branch. Syncs are merges, through merge-assistant.
 - Syncing the stack because main moved, when the probe is clean and nothing needs it.
 - Skipping a propagation run's checks because "we already know what changed".
