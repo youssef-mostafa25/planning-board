@@ -13,6 +13,15 @@ investigate (read-only) --> publish board --> group the Queue into jobs
       --> implement the job together --> verify --> job review --> mark Fixed
 ```
 
+When the plan is big and splits cleanly, the agent may propose a **stacked PR**: the
+jobs cut into an ordered chain of PRs, each targeting the branch below it, shown with
+the jobs in each PR and an ASCII drawing of the stack. You decide; without your yes
+there is no stack. When a PR's last job is reviewed, the agent gives you the PR's
+config in chat (head and target branch, title, body, draft, and labels or reviewers
+when the repo shows them), each part in its own block for copying, plus the next
+branch name. It never branches, commits, pushes or opens the PR itself. The board
+gets a Stack tab with each PR's progress, branches and config.
+
 A **job** is a group of Queue tasks that share files or a seam, implemented together
 and handed back as one change you can review in one sitting: what changed per task
 (`file:line`), the order to read it in, the proof, and a `git diff` per task. Every
@@ -67,7 +76,7 @@ checks staged changes before any commit and refuses if debug calls are present.
 
 | Skill | What it does |
 |---|---|
-| `planning-board` | The job loop: Queue tasks grouped into reviewable jobs, seven-heading proposals per task (Issue, Why, Fix, Gain, Effort, Risk, Legacy), approval per task or per job, a job review after implementation, status lifecycle, and the board template (`template.html`). |
+| `planning-board` | The job loop: Queue tasks grouped into reviewable jobs, seven-heading proposals per task (Issue, Why, Fix, Gain, Effort, Risk, Legacy), approval per task or per job, a job review after implementation, an optional user-approved stacked-PR split with copyable PR configs, status lifecycle, and the board template (`template.html`). |
 | `merge-assistant` | Merge planning: parallel branch analysis, semantic-conflict detection, a tabbed review artifact with per-decision pickers (`merge-review-template.html`), then a `--no-commit` merge driven by your decisions. |
 | `handoff` | Session handoff docs: grounded in `git` and real test runs, cumulative across sessions, with exact `file:line` references and copy-pasteable verification commands. |
 | `debug-log-sink` | Ephemeral cross-process debug logging: bundled stdlib collector (`debug-log-sink.py`), greppable `DEBUG_LOG_SINK` markers, a pre-commit guard, and two-tier cleanup verified by `git grep`. |

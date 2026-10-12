@@ -1,6 +1,6 @@
 ---
 name: planning-board
-description: Use when the user says to start a job, take one on, move to the next job, or asks for a plan before implementation — any piece of work with more than one task, where each task needs its own written proposal approved in words before any implementation file is touched, tracked on a published status page.
+description: Use when the user says to start a job, take one on, move to the next job, or asks for a plan before implementation — any piece of work with more than one task, where each task needs its own written proposal approved in words before any implementation file is touched, tracked on a published status page. Large plans can be split into a stacked PR, only if the user agrees.
 ---
 
 # Planning Board
@@ -15,6 +15,14 @@ A **job** is a group of tasks from the Queue that are implemented together, in o
 sitting, as one change the user can read, understand and review afterwards. Grouping
 pays for the reading once and turns several small diffs into one coherent one.
 
+A **stack** is an optional layer above jobs: the jobs are split into an ordered chain of
+pull requests, each targeting the branch of the one below it. It exists only when the
+plan is big enough to split cleanly **and the user chose it** (see *Stacked PRs*).
+
+```
+stack (optional) --> PR 1, PR 2, ... --> jobs --> tasks
+```
+
 **The rule: nothing is implemented until the user says yes, in words, to that specific
 task** — naming the task, or naming the job that contains it. A thumbs-up on another
 task or job, silence, or your own confidence that the fix is obvious are not approval.
@@ -24,7 +32,9 @@ task or job, silence, or your own confidence that the fix is obvious are not app
 - The user says "start a job", "take the next job", "let's work on X", "plan this out".
   No board yet → build one (steps 1–3), then take job 1. A board exists → take the
   top job on its Jobs tab. A board with no Jobs tab (made before jobs) → run step 3 on
-  it first, adding the Jobs panel and the Job column from `template.html`.
+  it first, adding the Jobs panel and the Job column from `template.html`. A board with
+  jobs but no stack decision, whose remaining jobs pass *Does it qualify*, gets step 3b
+  at the next job boundary.
 - Any work with 2+ tasks that will be worked over more than one turn.
 - The user asks for a plan, or asks what is wrong with something and what it would take to fix.
 
@@ -39,6 +49,10 @@ user says "start a job" / "take the next job"
   v
 1 INVESTIGATE (read-only) --> 2 PUBLISH SKELETON --> 3 GROUP the Queue into jobs
   |                            (tasks Open)          (Jobs tab, job on each Queue row)
+  v
+3b STACK? only if it qualifies: propose the PR split, draw it, STOP for the user's
+   yes / no / changes. No stack unless they say yes.
+  |
   v
 4 PRESENT the next job: job header + one proposal per task in it
   + move those tasks to "Plan submitted" (same turn)
@@ -55,6 +69,12 @@ user says "start a job" / "take the next job"
                                                                     v
                                            8 JOB REVIEW in chat + on the Jobs tab
                                              (board updated in the SAME turn as each move)
+                                                                    |
+                                                    stacked and that was the PR's last job?
+                                                                    v
+                                           9 PR HANDOFF: PR config + next branch name in
+                                             chat, Stack tab updated; branch check before
+                                             the next PR's first edit
 ```
 
 **Step 1 — investigate.** Read anything. Run read-only checks: greps, a throwaway probe
@@ -69,6 +89,10 @@ calls, so the user has something to watch. Tasks start at `Open`. Give them the 
 Fill the Jobs tab and the Job column on the Queue. Rank jobs, not just tasks. Effort and
 risk for jobs not yet presented are provisional — mark them `~M · ~Low` until their
 proposals are written.
+
+**Step 3b — stack?** Check the plan against *Does it qualify* below. If it does not, say
+nothing and go on. If it does, propose the split and stop for the user's answer before
+presenting job 1. The stack changes the order jobs are worked in, so it is settled first.
 
 **Step 4 — present the next job.** Start with the job header (below), then one proposal
 per task in the job, in chat, under the seven headings. Never one proposal covering
@@ -93,6 +117,10 @@ they printed. Not after writing the code — after proving it.
 **Step 8 — job review.** Hand the change back in the shape in *Job review* below, and
 put its one-line version in the job's Review cell. The job reaches `Fixed` when every
 task in it has.
+
+**Step 9 — PR handoff (stacked only).** When the job just reviewed was the last one in
+its PR, hand the PR over in the shape in *PR handoff* below, in the same turn as the job
+review.
 
 ## Forming jobs
 
@@ -144,6 +172,133 @@ change without re-deriving it:
    whose.
 5. **What did not change** — anything the user might expect to be touched and was not, and
    any task that left the job.
+
+## Stacked PRs
+
+A stack splits a large plan into a chain of PRs a reviewer can take one at a time. PR 1
+targets the base branch, PR 2 targets PR 1's branch, and so on. **Whether to stack is the
+user's decision.** You propose it, they choose. Without a yes in words there is no stack.
+
+### Does it qualify
+
+Propose a stack only when **both** of these hold:
+
+1. **Big enough.** Three or more jobs, or a total change one reviewer could not read in
+   one sitting (roughly 400+ changed lines or 15+ files). Two small jobs are one PR.
+2. **Splits cleanly.** There is an order where every PR builds, passes its tests and
+   makes sense if merged alone, and later PRs build on earlier ones. Natural cuts are
+   foundation then consumers, backend then frontend, refactor then feature, migration
+   then the code that uses it.
+
+It does **not** qualify when the jobs don't depend on each other. Those are independent
+PRs, not a stack; say so in one line if it helps. It also does not qualify when every cut
+leaves a PR that breaks the build until a later one lands.
+
+Rules for the cuts:
+
+- **A job belongs to exactly one PR.** Never split a job across PRs. If a cut wants to go
+  through a job, re-form the jobs.
+- **One to three jobs per PR**, ordered by dependency first. Inside a PR, jobs keep their
+  rank order. The stack order overrides job rank, so say when it moves a job.
+- **A High-risk job may get a PR of its own**, so it can be reverted alone.
+
+### Proposing it
+
+One message, then stop:
+
+1. **Why a stack**: one sentence on the size, and the dependency that gives the order.
+2. **Per PR**: number, proposed title, proposed branch, target branch, its jobs with their
+   task numbers, and one line on why the cut is there.
+3. **The drawing**: base branch at the top, each PR indented under the one it targets:
+
+```
+main
+ └─ PR 1  auth-cleanup/1-token-model   Jobs A, B   tasks 01 03 | 02
+     └─ PR 2  auth-cleanup/2-api-guards   Job C       tasks 04 05
+         └─ PR 3  auth-cleanup/3-ui-states   Jobs D, E   tasks 06 | 07 08
+```
+
+4. **Ask**: stack it like this, change the cuts, or keep it as one change. No default.
+
+Branch names follow the repo's convention, which you can see in `git branch -a` and recent
+merges. With no convention, use `<topic>/<n>-<slug>`. PR 1's branch can be the branch the
+user is already on.
+
+**Approving a job is not approving the stack**, and approving the stack approves no task.
+If they say no, record "No stack — declined" in the header meta and don't ask again
+unless the plan grows by half or more. If they say yes, add the Stack tab (template), put
+each job's PR on its Jobs row, and present PR 1's first job.
+
+### Working a stack
+
+- **Jobs are implemented in PR order.** No edit for a PR N+1 job until PR N has had its
+  handoff and the branch check below has passed. Proposals for later jobs may be
+  presented early. Implementing them may not start early.
+- **Each PR must stand alone.** Before the handoff, run the suite that covers the whole
+  PR, not only each task's check, and quote it.
+- **Branch check.** Before the first edit of each PR, run `git branch --show-current` and
+  `git status --short`. You should be on that PR's branch with a clean tree, which means
+  the previous PR's work is committed on its own branch. If not, stop and say what is off.
+  Never carry one PR's uncommitted work into the next PR's branch.
+- **Late changes to an earlier PR.** If review feedback changes PR N after PR N+1 has
+  started, say which branches need a rebase and give the commands. You run nothing.
+
+### PR handoff
+
+**In chat only**, unless the user asks for a file. Every part goes in its own fenced block
+so it can be copied alone:
+
+~~~text
+**PR 2 of 3 is ready: Guard empty token lists in the API layer**
+
+Head branch
+```
+auth-cleanup/2-api-guards
+```
+Target branch
+```
+auth-cleanup/1-token-model
+```
+Title
+```
+Guard empty token lists in the API layer
+```
+Body
+````markdown
+## Summary
+...
+````
+Draft: no · Labels: `bug` · Reviewers: (only what the repo shows; else leave out)
+
+Next branch: PR 3 targets this one
+```
+auth-cleanup/3-ui-states
+```
+```
+git switch -c auth-cleanup/3-ui-states
+```
+~~~
+
+- **Title** follows the repo's PR/commit style (`git log --oneline`).
+- **Body**: if the repo has `.github/pull_request_template.md` (or a `PULL_REQUEST_TEMPLATE`
+  folder), fill that. Otherwise use these sections: *Summary* (1–3 sentences), *Stack*
+  (PR n of N; the PR it depends on, by number once the user has given it, else by branch;
+  the PR that builds on it), *Changes* (per task: what and where, from the job reviews),
+  *How to review* (read order), *Testing* (per task, the check and what it printed, plus
+  the whole-PR suite), *Not in this PR*. Wrap the body in a fence with more backticks than
+  any fence inside it. End it with any PR attribution line the session requires.
+- **Labels and reviewers**: only when the repo shows them, through existing labels,
+  CODEOWNERS or the user's past PRs. Never invent one. **Draft**: say yes or no; the user
+  decides.
+- **Next branch**: give the name and the create command, and say the user should commit
+  this PR's work first. Leave it out for the last PR.
+
+In the same turn, set the PR to `Ready` on the Stack tab and fill its config there. When
+the user says they opened it, record the number and link; when merged, mark it `Merged`.
+Later PR bodies then refer to it by number.
+
+PR statuses: `Planned` → `In progress` (its first job approved) → `Ready` (handed over) →
+`Opened` (#n) → `Merged`. A PR's progress is jobs Fixed / jobs in it.
 
 ## The seven headings
 
@@ -229,14 +384,17 @@ is not an exception; small is not the criterion.
 
 **Never commit.** Implementation lands **uncommitted** in the working tree. No
 `git commit`, `git push`, `gh pr create`, amend or tag unless the user says so, in words —
-and being told once is not permission for the next time.
+and being told once is not permission for the next time. **A stack does not change this.**
+Saying yes to the stack is not permission to commit, branch, push or open PRs. You give
+the config and the branch names, and the user runs them. Permission covers only what the
+user named: "create the branches for this stack" covers branches, not commits or pushes.
 
 ## Building the board
 
 Copy `template.html` (next to this SKILL.md) and fill it in. It is a single self-contained file: tabs, status
 pills, filter chips and tally, light and dark, works at phone width.
 
-**Scale the tabs to the board.** The template ships five; delete what the board does not need,
+**Scale the tabs to the board.** The template ships six; delete what the board does not need,
 and add Method by copying the Queue panel and changing its id.
 
 | Tab | In template | Keep / add it when |
@@ -245,6 +403,7 @@ and add Method by copying the Queue panel and changing its id.
 | Jobs | yes | Always. Every job in rank order: its tasks, why they are together, files touched, effort · risk, and the review once it is done. |
 | Queue | yes | Always. Open tasks in rank order — severity weighted by reach, certainty and cost — with the job each belongs to. |
 | Tasks | yes | Always. Every task, grouped by area, with the status filter chips. |
+| Stack | yes | Only when the user said yes to a stacked PR. The stack drawn top to bottom, and per PR: status, progress, branch → target, its jobs, and the config to copy. Delete it otherwise. |
 | Manual tests | yes | Only when something needs a browser, a real provider, or a judgement call. |
 | Method | add | Only when how the task list was produced is itself worth recording. |
 
@@ -273,3 +432,9 @@ the link once, in one line.
 - Marking `Fixed` before running the verification.
 - Editing a directory outside the lane because the fix was small.
 - Publishing a second board when one already exists for this work.
+- Splitting into a stack, or choosing its cuts, without the user saying yes in words.
+- A job split across two PRs, or a PR that breaks the build until a later one lands.
+- Editing for the next PR before the handoff and branch check, or with the previous
+  PR's work still uncommitted in the tree.
+- Creating a branch, committing, pushing or opening a PR yourself because a stack exists.
+- A PR's last job reviewed without the PR handoff in the same turn.
