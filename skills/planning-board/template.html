@@ -224,6 +224,11 @@
   .stack>li.base::after{border-radius:3px;border-color:var(--ink);background:var(--ink)}
   .stack .basebox{padding:9px 0 4px;font-family:var(--mono);font-size:12px;color:var(--ink-2)}
   .stack .basebox b{color:var(--ink);font-weight:600}
+  .stack .basebox .probe{display:block;margin-top:3px;font-size:11px;color:var(--ink-3)}
+  .stack .basebox .probe.warn{color:var(--open)}
+  .pr-sync{margin-top:9px;font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--ink-3)}
+  .pr-sync b{color:var(--ink-2);font-weight:500}
+  .pr-sync.warn{color:var(--open)}
 
   .pr{background:var(--panel);border:1px solid var(--rule);border-radius:7px;padding:13px 16px}
   .pr-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 11px}
@@ -353,7 +358,8 @@
   <div class="note">
     <h3>Stacked PRs — only because the user chose one</h3>
     <p>This board's jobs are split into a chain of PRs on the <em>Stack</em> tab, each targeting the branch of the one above it. Implement jobs in PR order. Before the first edit of a PR, check you are on its branch with a clean tree; if the previous PR's work is still uncommitted, stop and say so.</p>
-    <p>When a PR's last job is reviewed, give its <b>config in chat</b>, each part in its own block: head branch, target branch, title, body, draft, and labels or reviewers only if the repo shows them. Add the <b>next branch name</b>, then fill the same config on the Stack tab. <b>You never branch, commit, push or open the PR yourself</b> unless the user says so, in words.</p>
+    <p>When a PR's last job is reviewed, give its <b>config in chat</b>, each part in its own block: head branch, target branch, title, body, draft, merge method (merge commit), and labels or reviewers only if the repo shows them. Add the <b>next branch name</b>, then fill the same config on the Stack tab. <b>You never branch, commit, push or open the PR yourself</b> unless the user says so, in words.</p>
+    <p><b>When the base moves, leave the stack alone</b> unless the base probe shows a conflict, the repo requires up-to-date branches, or a PR landed by squash or rebase merge. Then sync by <b>merging, never rebasing</b>, one link at a time, bottom-up, each through <code>youssef-skills:merge-assistant</code>: a full run for the base into PR 1, then a propagation run per PR above it. Every link is verified (dry-run, clean-but-dangerous scan, the PR's suite and its job-review checks) and committed by the user before the next starts.</p>
   </div>
 
   <div class="note">
@@ -422,12 +428,16 @@
        p-merged  / pill pr-merged   Merged
      Progress = jobs Fixed / jobs in the PR; set the bar width to the same fraction.
      Config: fill at handoff, matching what was given in chat. HTML-escape the body
-     (& < >) inside the <pre>. Open the <details> of the PR that is Ready. -->
+     (& < >) inside the <pre>. Open the <details> of the PR that is Ready.
+     Base line: the latest base probe ("N commits ahead of PR 1 · merges cleanly — no
+     action needed"); add class "warn" to .probe when it reports a conflict.
+     Sync line: the base commit the PR is synced with and the last sync (what was merged,
+     decisions, checks). Add class "warn" while a sync is needed or a cascade stopped here. -->
 <div class="panel" id="p-stack" role="tabpanel" aria-labelledby="tab-stack" hidden>
-  <p class="lede">The jobs are split into a <strong>stack of PRs</strong>, reviewed and merged in order. Each PR targets the branch of the one above it, and when that one merges, retarget it to the base. The config under each PR is what to paste when you open it; every field has its own copy button.</p>
+  <p class="lede">The jobs are split into a <strong>stack of PRs</strong>, reviewed and merged in order. Each PR targets the branch of the one above it. Land them with a <strong>merge commit</strong>, then retarget the next PR to the base. The stack is kept in sync by <strong>merging, never rebasing</strong>, and only when the base probe or a squash landing calls for it. The config under each PR is what to paste when you open it; every field has its own copy button.</p>
 
   <ol class="stack">
-    <li class="base"><div class="basebox">base <b>main</b></div></li>
+    <li class="base"><div class="basebox">base <b>main</b> @ abc1234<span class="probe">Checked DATE · main is 0 commits ahead of PR 1 · merges cleanly — no action needed</span></div></li>
 
     <li class="p-planned">
       <div class="pr">
@@ -438,6 +448,7 @@
         </div>
         <div class="pr-branch"><code>topic/1-slug</code> → <code>main</code></div>
         <div class="pr-prog"><div class="bar"><span style="width:0%"></span></div><span>0 / 1 jobs fixed · 0 / 2 tasks</span></div>
+        <div class="pr-sync"><b>Synced with</b> main @ abc1234 · never re-synced</div>
         <div class="pr-jobs">
           <span class="pr-job"><span class="dot open"></span><b>Job A</b> tasks 01, 03</span>
         </div>
@@ -466,6 +477,7 @@ Start at file.py, then other_file.ts.
 ## Not in this PR
 - Anything a reviewer might expect here.</pre></div>
           <div class="cfg-row"><span class="cfg-k">Draft</span><code class="cfg-v">no</code><button class="copy" type="button">Copy</button></div>
+          <div class="cfg-row"><span class="cfg-k">Merge method</span><code class="cfg-v">merge commit</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row"><span class="cfg-k">Next branch</span><code class="cfg-v">topic/2-slug</code><button class="copy" type="button">Copy</button></div>
           <p class="cfg-note">Labels and reviewers appear only when the repo shows them. Commit this PR's work before creating the next branch.</p>
         </details>
@@ -481,6 +493,7 @@ Start at file.py, then other_file.ts.
         </div>
         <div class="pr-branch"><code>topic/2-slug</code> → <code>topic/1-slug</code></div>
         <div class="pr-prog"><div class="bar"><span style="width:0%"></span></div><span>0 / 1 jobs fixed · 0 / 1 tasks</span></div>
+        <div class="pr-sync"><b>Synced with</b> topic/1-slug @ def5678 · never re-synced</div>
         <div class="pr-jobs">
           <span class="pr-job"><span class="dot open"></span><b>Job B</b> task 02</span>
         </div>

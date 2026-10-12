@@ -1,6 +1,6 @@
 ---
 name: merge-assistant
-description: Guide safe git branch merges by analyzing what changed on each branch in parallel, surfacing not just textual conflicts but also semantic and logical issues that silently break things, getting the user's decision on every issue upfront, then executing the merge with those decisions baked in. Use this whenever the user wants to merge git branches together — phrasings like "merge my feature into main", "combine these branches", "bring my branch up to date with main", "help me resolve merge conflicts", or any request involving git merge planning. Strongly prefer this skill over a quick `git merge` for any non-trivial merge.
+description: Guide safe git branch merges by analyzing what changed on each branch in parallel, surfacing not just textual conflicts but also semantic and logical issues that silently break things, getting the user's decision on every issue upfront, then executing the merge with those decisions baked in. Use this whenever the user wants to merge git branches together — phrasings like "merge my feature into main", "combine these branches", "bring my branch up to date with main", "help me resolve merge conflicts", or any request involving git merge planning. Strongly prefer this skill over a quick `git merge` for any non-trivial merge. Also used by planning-board to keep a stacked PR in sync (Stack mode).
 ---
 
 # Merge Assistant
@@ -418,6 +418,61 @@ If they choose to commit, use `git commit` (default merge message in editor) or 
 
 ---
 
+## Stack mode (called from planning-board)
+
+`youssef-skills:planning-board` keeps a stacked PR in sync by **merging, never
+rebasing**, and every one of those merges runs through this skill. It tells you the
+**link**: the source branch, the target branch, and which kind of run it is. One link per
+run, bottom-up. Everything above still applies unless this section says otherwise.
+
+**Base merge**: the base (`origin/main`, or a new base) into PR 1's branch. **It is a full
+run with no shortcuts.** The base's changes are unknown, so all three analysts run and the
+review page is published as usual. The caller has just fetched, so skip the fetch question
+and say when it was fetched. Keep the decision log, because the propagation runs above
+reuse it.
+
+**Propagation**: PR N's branch (or the base, after PR N landed by squash or rebase merge)
+into PR N+1's branch. The incoming change is already known, which is what makes it
+cheaper. **The checks are not cheaper.**
+
+1. **The known change.** `git merge-base` of the two branches is the commit PR N+1 was
+   last synced with, so `git diff <merge-base>..<source-branch>` is exactly what is
+   coming in. For the squash case, compare `git diff $(git merge-base origin/main <PR N
+   branch>) <PR N branch> | git patch-id --stable` with `git show <squash commit> | git
+   patch-id --stable`. If the ids match, PR N landed as it was last pushed, and the only
+   new code is the base's other commits. If they differ, whatever changed at landing is
+   part of the known change, so name it.
+2. **Source analyst.** If the known change came from a base merge or propagation run in
+   this session (or recorded on the board), reuse that run's source report and decision
+   log instead of dispatching. Otherwise run it, scoped to the known change.
+3. **Target analyst.** Scope it to PR N+1's own work, `git diff <merge-base>..<target-branch>`.
+   The board's job reviews give the intent, but check them against the diff. If the diff
+   is small you may do this yourself instead of dispatching.
+4. **Cross-diff analyst: always, in full.** That means the dry-run in a detached
+   worktree, the conflict map, and the clean-but-dangerous scan, because that is where a
+   propagation goes wrong. Add a **carry-forward check**: for every decision in the
+   previous link's log, ask whether PR N+1 touches the same files or adds a new member of
+   the same family. A changed convention in the base that meets a new sibling in PR N+1
+   is exactly the convention drift above.
+5. **Decisions.** A conflict PR N+1 doesn't touch, resolved the same way as the previous
+   link, is **carried**. List it under small fixes as "carried from <link> D<n>". The user
+   still confirms it in the summary table. Anything new is a decision card as usual.
+6. **Page.** Publish the review page when the run has at least one decision or any
+   Critical or Warning finding. Otherwise give the terminal summary block, the dry-run
+   result, every clean-but-dangerous file you checked and what you found, and "No
+   decisions". Then ask for confirmation to go to Phase 2.
+7. **Phase 2 is unchanged**, and Step 6 adds **the PR's whole suite and the task checks
+   from that PR's job reviews** on the board, each quoted. A propagation run that skips
+   these is not verified.
+
+For both kinds: commit only when the user says so, as in Phase 2. Never push; a merge
+needs no force-push, so the user pushes normally. Finish with one line per link for the
+board's sync line: what was merged, the base commit it is now synced with, the decision
+count, and the checks with their results. If a check fails, stop and say so. The caller
+does not start the next link.
+
+---
+
 ## Aborting safely
 
 At any point during Phase 2, if the user wants to abort:
@@ -454,5 +509,6 @@ If the user aborts during Phase 1 (before the merge has started), nothing needs 
 - Do not treat a clean auto-merge as a correct merge. The most dangerous breakage lives in files that merged *without* conflict markers — especially a new function/route/class added on one side that still follows a convention the other side changed across its whole family. Re-scan them and exercise the runtime path.
 - Do not run the dry-run merge anywhere but a detached temporary worktree. If the worktree can't be created, stop — never merge in the live tree to "just check."
 - Do not delete the backup ref. Leave cleanup to the user.
-- Do not skip the merge review artifact or the sha3bolly style, and do not deliver the findings as a long wall of terminal text instead. Every run ends Phase 1 with a published page built from `merge-review-template.html`, with every choice on its Decisions tab.
+- Do not skip the merge review artifact or the sha3bolly style, and do not deliver the findings as a long wall of terminal text instead. Every run ends Phase 1 with a published page built from `merge-review-template.html`, with every choice on its Decisions tab. The only exception is a stack-mode propagation run with no decisions and no Critical or Warning findings (see *Stack mode*).
+- Do not shorten a stack-mode propagation run's checks because the incoming change is known. The cross-diff analyst, the clean-but-dangerous scan and the PR's tests always run.
 - Do not restyle the template or rewrite its scripts. Only the content changes from merge to merge.

@@ -239,9 +239,59 @@ each job's PR on its Jobs row, and present PR 1's first job.
 - **Branch check.** Before the first edit of each PR, run `git branch --show-current` and
   `git status --short`. You should be on that PR's branch with a clean tree, which means
   the previous PR's work is committed on its own branch. If not, stop and say what is off.
-  Never carry one PR's uncommitted work into the next PR's branch.
-- **Late changes to an earlier PR.** If review feedback changes PR N after PR N+1 has
-  started, say which branches need a rebase and give the commands. You run nothing.
+  Never carry one PR's uncommitted work into the next PR's branch. Run the base probe
+  (below) in the same check.
+
+### When the base moves
+
+**Default: leave the stack alone.** New commits on `main` need no action by themselves.
+Only PR 1 targets it, and GitHub only needs PR 1 to merge without conflicts. Sync only
+when one of these is true:
+
+- PR 1 conflicts with the base, on GitHub or in the probe below,
+- the repo requires branches to be up to date before merging,
+- the stack needs something that landed on the base,
+- a PR in the stack landed by squash or rebase merge (see the table).
+
+**Sync by merging, never by rebasing.** A merge rewrites nothing, so there is no
+force-push and review comments stay attached. Every sync merge goes through
+`youssef-skills:merge-assistant` in its *Stack mode*. Load it and follow it. If the user
+asks for a rebase instead, give the `git rebase --update-refs` command with backup tags.
+You run nothing.
+
+**The base probe** is read-only, so run it at every branch check:
+
+```
+git fetch origin
+git rev-list --count <PR 1 branch>..origin/main         # how far main has moved
+git merge-tree --write-tree origin/main <PR 1 branch>   # exit 1 = conflict (git 2.38+)
+```
+
+Report it in one line, such as "main is 7 commits ahead of PR 1 and merges cleanly, no
+action needed", and put it on the Stack tab's base line. A clean probe is not a reason
+to sync. On older git, use merge-assistant's dry-run in a detached worktree instead.
+
+| What happened | What to do |
+|---|---|
+| The base moved and a sync is needed | 1. **Base merge**: merge the base into PR 1, a full merge-assistant run. 2. **Propagate** bottom-up: PR 1 into PR 2, PR 2 into PR 3, each a stack-mode propagation run. |
+| PR N landed with a merge commit | Retarget PR N+1 to the base. GitHub does this itself when PR N's branch is deleted on merge. Nothing to merge. |
+| PR N landed by squash or rebase merge | The base now has PR N's changes under new commits, so PR N+1's diff shows them again. Merge the base into PR N+1 as a propagation run, where the known change is PR N as it landed. Then retarget. Keep PR N's branch until this is done, because the run compares against it. |
+| Review changed PR N after PR N+1 started | Propagate PR N into PR N+1, then upward. The known change is PR N's new commits. |
+| The user moves the stack to a new base | Base merge of the new base into PR 1. The user retargets PR 1, then propagate. |
+
+- **One link at a time, bottom-up.** A link is done when its merge is verified and the
+  user has committed it. The user commits, and you never push. Don't start the next link
+  before that.
+- **Verify every link, even the easy ones.** Knowing what changed shortens the analysis,
+  not the checks. Run the dry-run, the clean-but-dangerous scan, the PR's whole suite, and
+  the task checks from that PR's job reviews, and quote what each printed.
+- **Stop the cascade on any failure** and say which link it stopped at. Links above it
+  stay as they were.
+- **Recommend merge commits for landing.** Every PR config carries "Merge method: merge
+  commit". A squash forces a propagation run on every PR above it.
+- **Board, same turn.** Each sync updates the PR's sync line on the Stack tab: the base
+  commit it is synced with, what was merged, the decisions and the checks run. If a merge
+  changed what a PR does, update its Body config and tell the user to edit the PR.
 
 ### PR handoff
 
@@ -268,7 +318,7 @@ Body
 ## Summary
 ...
 ````
-Draft: no · Labels: `bug` · Reviewers: (only what the repo shows; else leave out)
+Draft: no · Merge method: merge commit · Labels: `bug` · Reviewers: (only what the repo shows; else leave out)
 
 Next branch: PR 3 targets this one
 ```
@@ -289,13 +339,15 @@ git switch -c auth-cleanup/3-ui-states
   any fence inside it. End it with any PR attribution line the session requires.
 - **Labels and reviewers**: only when the repo shows them, through existing labels,
   CODEOWNERS or the user's past PRs. Never invent one. **Draft**: say yes or no; the user
-  decides.
+  decides. **Merge method**: merge commit, so the PRs above need no propagation run
+  when it lands (see *When the base moves*).
 - **Next branch**: give the name and the create command, and say the user should commit
   this PR's work first. Leave it out for the last PR.
 
 In the same turn, set the PR to `Ready` on the Stack tab and fill its config there. When
-the user says they opened it, record the number and link; when merged, mark it `Merged`.
-Later PR bodies then refer to it by number.
+the user says they opened it, record the number and link. When it is merged, mark it
+`Merged`, ask which merge method was used, and follow *When the base moves* for the PR
+above it. Later PR bodies then refer to it by number.
 
 PR statuses: `Planned` → `In progress` (its first job approved) → `Ready` (handed over) →
 `Opened` (#n) → `Merged`. A PR's progress is jobs Fixed / jobs in it.
@@ -403,7 +455,7 @@ and add Method by copying the Queue panel and changing its id.
 | Jobs | yes | Always. Every job in rank order: its tasks, why they are together, files touched, effort · risk, and the review once it is done. |
 | Queue | yes | Always. Open tasks in rank order — severity weighted by reach, certainty and cost — with the job each belongs to. |
 | Tasks | yes | Always. Every task, grouped by area, with the status filter chips. |
-| Stack | yes | Only when the user said yes to a stacked PR. The stack drawn top to bottom, and per PR: status, progress, branch → target, its jobs, and the config to copy. Delete it otherwise. |
+| Stack | yes | Only when the user said yes to a stacked PR. The stack drawn top to bottom, with the base probe on the base line, and per PR: status, progress, branch → target, sync line, its jobs, and the config to copy. Delete it otherwise. |
 | Manual tests | yes | Only when something needs a browser, a real provider, or a judgement call. |
 | Method | add | Only when how the task list was produced is itself worth recording. |
 
@@ -438,3 +490,7 @@ the link once, in one line.
   PR's work still uncommitted in the tree.
 - Creating a branch, committing, pushing or opening a PR yourself because a stack exists.
 - A PR's last job reviewed without the PR handoff in the same turn.
+- Rebasing or force-pushing a stack branch. Syncs are merges, through merge-assistant.
+- Syncing the stack because main moved, when the probe is clean and nothing needs it.
+- Skipping a propagation run's checks because "we already know what changed".
+- Starting the next link of a sync cascade before the previous one is verified and committed.

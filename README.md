@@ -22,6 +22,12 @@ when the repo shows them), each part in its own block for copying, plus the next
 branch name. It never branches, commits, pushes or opens the PR itself. The board
 gets a Stack tab with each PR's progress, branches and config.
 
+When `main` moves, the stack is left alone unless a read-only probe shows a conflict,
+the repo requires up-to-date branches, or a PR landed by squash. Then the stack is synced
+by **merging, never rebasing**, one link at a time from the bottom up, each through
+merge-assistant: a full run for `main` into PR 1, and a lighter propagation run for each
+PR above it. Every link is verified before the next one starts.
+
 A **job** is a group of Queue tasks that share files or a seam, implemented together
 and handed back as one change you can review in one sitting: what changed per task
 (`file:line`), the order to read it in, the proof, and a `git diff` per task. Every
@@ -77,7 +83,7 @@ checks staged changes before any commit and refuses if debug calls are present.
 | Skill | What it does |
 |---|---|
 | `planning-board` | The job loop: Queue tasks grouped into reviewable jobs, seven-heading proposals per task (Issue, Why, Fix, Gain, Effort, Risk, Legacy), approval per task or per job, a job review after implementation, an optional user-approved stacked-PR split with copyable PR configs, status lifecycle, and the board template (`template.html`). |
-| `merge-assistant` | Merge planning: parallel branch analysis, semantic-conflict detection, a tabbed review artifact with per-decision pickers (`merge-review-template.html`), then a `--no-commit` merge driven by your decisions. |
+| `merge-assistant` | Merge planning: parallel branch analysis, semantic-conflict detection, a tabbed review artifact with per-decision pickers (`merge-review-template.html`), then a `--no-commit` merge driven by your decisions. Also syncs planning-board's stacked PRs (Stack mode: full run for the base, verified propagation runs up the stack). |
 | `handoff` | Session handoff docs: grounded in `git` and real test runs, cumulative across sessions, with exact `file:line` references and copy-pasteable verification commands. |
 | `debug-log-sink` | Ephemeral cross-process debug logging: bundled stdlib collector (`debug-log-sink.py`), greppable `DEBUG_LOG_SINK` markers, a pre-commit guard, and two-tier cleanup verified by `git grep`. |
 | `sha3bolly` | The explanation style proposals are written in: plain words, always a concrete example, a flowchart when steps chain. `planning-board` and `merge-assistant` depend on it, so it ships here. Created by [Habiba Abueldahab](https://github.com/abueldahabh) — original at [abueldahabh/sha3bolly](https://github.com/abueldahabh/sha3bolly), MIT licensed ([`skills/sha3bolly/LICENSE`](skills/sha3bolly/LICENSE)). |
