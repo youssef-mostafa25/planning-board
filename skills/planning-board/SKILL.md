@@ -15,12 +15,20 @@ A **job** is a group of tasks from the Queue that are implemented together, in o
 sitting, as one change the user can read, understand and review afterwards. Grouping
 pays for the reading once and turns several small diffs into one coherent one.
 
-A **stack** is an optional layer above jobs: the jobs are split into an ordered chain of
-pull requests, each targeting the branch of the one below it. It exists only when the
-plan is big enough to split cleanly **and the user chose it** (see *Stacked PRs*).
+A **PR plan** sits above jobs: which pull request each job lands in. Every board has
+one, drawn on its **PRs tab** with a copyable config per PR. It is one of these shapes
+(see *PR plan*):
+
+- **One PR**: every job in a single PR.
+- **Independent PRs**: several PRs, each branching from the base and targeting it, in any
+  merge order.
+- **A stack**: an ordered chain of PRs, each targeting the branch of the one below it. It
+  exists only when the plan is big enough to split cleanly **and the user chose it**
+  (see *Stacked PRs*).
+- **A mix**: one or more stacks alongside independent PRs.
 
 ```
-stack (optional) --> PR 1, PR 2, ... --> jobs --> tasks
+PR plan (always) --> PR 1, PR 2, ... (each independent or stacked) --> jobs --> tasks
 ```
 
 **The rule: nothing is implemented until the user says yes, in words, to that specific
@@ -33,8 +41,8 @@ task or job, silence, or your own confidence that the fix is obvious are not app
   No board yet → build one (steps 1–3), then take job 1. A board exists → take the
   top job on its Jobs tab. A board with no Jobs tab (made before jobs) → run step 3 on
   it first, adding the Jobs panel and the Job column from `template.html`. A board with
-  jobs but no stack decision, whose remaining jobs pass *Does it qualify*, gets step 3b
-  at the next job boundary.
+  jobs but no PRs tab (or the older Stack tab) gets step 3b at the next job boundary,
+  adding the PRs panel from `template.html`.
 - Any work with 2+ tasks that will be worked over more than one turn.
 - The user asks for a plan, or asks what is wrong with something and what it would take to fix.
 
@@ -50,8 +58,9 @@ user says "start a job" / "take the next job"
 1 INVESTIGATE (read-only) --> 2 PUBLISH SKELETON --> 3 GROUP the Queue into jobs
   |                            (tasks Open)          (Jobs tab, job on each Queue row)
   v
-3b STACK? only if it qualifies: propose the PR split, draw it, STOP for the user's
-   yes / no / changes. No stack unless they say yes.
+3b PR PLAN: put every job in a PR, fill the PRs tab (shape + config per PR).
+   One PR or independent PRs: say the layout in one line and go on.
+   A stack (only if it qualifies): propose it, draw it, STOP for yes / no / changes.
   |
   v
 4 PRESENT the next job: job header + one proposal per task in it
@@ -70,9 +79,9 @@ user says "start a job" / "take the next job"
                                            8 JOB REVIEW in chat + on the Jobs tab
                                              (board updated in the SAME turn as each move)
                                                                     |
-                                                    stacked and that was the PR's last job?
+                                                    was that the PR's last job?
                                                                     v
-                                           9 PR HANDOFF: body on the Stack tab (copy button),
+                                           9 PR HANDOFF: body on the PRs tab (copy button),
                                              the short fields + next branch name in chat;
                                              branch check before the next PR's first edit
 ```
@@ -90,9 +99,13 @@ Fill the Jobs tab and the Job column on the Queue. Rank jobs, not just tasks. Ef
 risk for jobs not yet presented are provisional — mark them `~M · ~Low` until their
 proposals are written.
 
-**Step 3b — stack?** Check the plan against *Does it qualify* below. If it does not, say
-nothing and go on. If it does, propose the split and stop for the user's answer before
-presenting job 1. The stack changes the order jobs are worked in, so it is settled first.
+**Step 3b — PR plan.** Put every job in a PR and fill the PRs tab, following *PR plan*
+below. Each PR gets its shape (`Independent` or `Stacked`) and its config from the start.
+For one PR or independent PRs, say the layout in one line in chat and go on; the user
+may change it. If the plan also passes *Does it qualify*, propose the stack and stop for
+the user's answer before presenting job 1. A stack changes the order jobs are worked in,
+so it is settled first. While it waits, draw it as one chain labelled "Proposed stack:
+awaiting your yes".
 
 **Step 4 — present the next job.** Start with the job header (below), then one proposal
 per task in the job, in chat, under the seven headings. Never one proposal covering
@@ -118,9 +131,9 @@ they printed. Not after writing the code — after proving it.
 put its one-line version in the job's Review cell. The job reaches `Fixed` when every
 task in it has.
 
-**Step 9 — PR handoff (stacked only).** When the job just reviewed was the last one in
-its PR, hand the PR over in the shape in *PR handoff* below, in the same turn as the job
-review.
+**Step 9 — PR handoff.** When the job just reviewed was the last one in its PR, stacked
+or independent, hand the PR over in the shape in *PR handoff* below, in the same turn as
+the job review.
 
 ## Forming jobs
 
@@ -172,6 +185,40 @@ change without re-deriving it:
    whose.
 5. **What did not change** — anything the user might expect to be touched and was not, and
    any task that left the job.
+
+## PR plan
+
+Every job belongs to exactly one PR, and every PR is on the PRs tab. **The tab is never
+deleted**, whatever the shape: one PR or four independent ones get it just as a stack does.
+
+**Choosing the shape.** Default to **one PR**. Split into **independent PRs** when the
+jobs don't depend on each other and one PR would be too big to review in one sitting
+(the same size bar as *Does it qualify*), or when it would mix unrelated areas that
+different people review. Propose a **stack** only when *Does it qualify* holds. One PR
+and independent PRs are your call, so state the layout in one line. A stack is the
+user's call.
+
+**What the PRs tab shows**, per PR, from the moment the plan exists:
+
+1. **Shape pill**: `Independent` (branches from the base, targets the base) or `Stacked`
+   (targets the PR below it in its chain).
+2. **Status pill**, progress (jobs Fixed / jobs in it), branch → target, sync line, its
+   jobs.
+3. **Config**, every field with its own Copy button: head branch, target, title, the
+   create command (`git switch -c <branch> origin/<base>` for an independent PR or PR 1
+   of a stack; `git switch -c <branch>` from the PR below for a stacked one), draft,
+   merge method. The **body** is added at handoff (*PR handoff*).
+
+Above the PRs, an **overview table** lists every PR with its shape, branch → target,
+what it builds on ("—" for independent), its jobs, and the issues it closes. Then each
+**chain** is drawn under its own base line: a stack is one chain with each PR under the
+one it targets, and an independent PR is a chain of one. Under the overview, give one
+line per PR saying why it is independent or what it builds on.
+
+**Branch check, every PR.** Before the first edit of each PR, run
+`git branch --show-current` and `git status --short`. You should be on that PR's branch
+with a clean tree. If not, stop and say what is off. Never carry one PR's uncommitted work
+into another PR's branch, stacked or not.
 
 ## Stacked PRs
 
@@ -225,9 +272,11 @@ merges. With no convention, use `<topic>/<n>-<slug>`. PR 1's branch can be the b
 user is already on.
 
 **Approving a job is not approving the stack**, and approving the stack approves no task.
-If they say no, record "No stack — declined" in the header meta and don't ask again
-unless the plan grows by half or more. If they say yes, add the Stack tab (template), put
-each job's PR on its Jobs row, and present PR 1's first job.
+If they say no, record "No stack — declined" in the header meta, redraw those jobs as one
+`Independent` PR on the PRs tab (or the split the user asked for instead), and don't ask
+again unless the plan grows by half or more. If they say yes, mark those PRs
+`Stacked` on the PRs tab, redraw them as one chain with each PR under the one it targets,
+update their targets and create commands, and present PR 1's first job.
 
 ### Working a stack
 
@@ -236,11 +285,9 @@ each job's PR on its Jobs row, and present PR 1's first job.
   presented early. Implementing them may not start early.
 - **Each PR must stand alone.** Before the handoff, run the suite that covers the whole
   PR, not only each task's check, and quote it.
-- **Branch check.** Before the first edit of each PR, run `git branch --show-current` and
-  `git status --short`. You should be on that PR's branch with a clean tree, which means
-  the previous PR's work is committed on its own branch. If not, stop and say what is off.
-  Never carry one PR's uncommitted work into the next PR's branch. Run the base probe
-  (below) in the same check.
+- **Branch check** (see *PR plan*). In a stack, a clean tree on PR N+1's branch also
+  means PR N's work is committed on its own branch. Run the base probe (below) in the
+  same check.
 
 ### When the base moves
 
@@ -268,7 +315,7 @@ git merge-tree --write-tree origin/main <PR 1 branch>   # exit 1 = conflict (git
 ```
 
 Report it in one line, such as "main is 7 commits ahead of PR 1 and merges cleanly, no
-action needed", and put it on the Stack tab's base line. A clean probe is not a reason
+action needed", and put it on that chain's base line on the PRs tab. A clean probe is not a reason
 to sync. On older git, use merge-assistant's dry-run in a detached worktree instead.
 
 | What happened | What to do |
@@ -289,14 +336,15 @@ to sync. On older git, use merge-assistant's dry-run in a detached worktree inst
   stay as they were.
 - **Recommend merge commits for landing.** Every PR config carries "Merge method: merge
   commit". A squash forces a propagation run on every PR above it.
-- **Board, same turn.** Each sync updates the PR's sync line on the Stack tab: the base
+- **Board, same turn.** Each sync updates the PR's sync line on the PRs tab: the base
   commit it is synced with, what was merged, the decisions and the checks run. If a merge
   changed what a PR does, update its Body config and tell the user to edit the PR.
 
 ### PR handoff
 
-**The body goes on the board, never in chat.** Write the full PR body into the PR's
-config on the Stack tab, where its Copy button copies it, and republish. Do not paste the
+Every PR gets a handoff, stacked or independent. **The body goes on the board, never in
+chat.** Write the full PR body into the PR's config on the PRs tab, where its Copy button
+copies it, and republish. Do not paste the
 body into the response, not even a shortened one. Chat carries the short fields, each in
 its own fenced block so it can be copied alone, and points at the board for the body.
 Nothing goes in a file unless the user asks.
@@ -316,7 +364,7 @@ Title
 ```
 Guard empty token lists in the API layer
 ```
-Body: on the board, Stack tab → PR 2 → PR config → Copy
+Body: on the board, PRs tab → PR 2 → PR config → Copy
 Draft: yes (PR 1 is still in review) · Merge method: merge commit · Labels: `bug` · Reviewers: (only what the repo shows; else leave out)
 
 Next branch: PR 3 targets this one
@@ -332,7 +380,8 @@ git switch -c auth-cleanup/3-ui-states
 - **Body**: if the repo has `.github/pull_request_template.md` (or a `PULL_REQUEST_TEMPLATE`
   folder), fill that. Otherwise use these sections: *Summary* (1–3 sentences), *Stack*
   (PR n of N; the PR it depends on, by number once the user has given it, else by branch;
-  the PR that builds on it), *Changes* (per task: what and where, from the job reviews),
+  the PR that builds on it; for an independent PR, "Independent: targets `<base>` and
+  builds on no other PR"), *Changes* (per task: what and where, from the job reviews),
   *How to review* (read order), *Testing* (per task, the check and what it printed, plus
   the whole-PR suite), *Not in this PR*.
 - **PR 1's body opens with the stack overview**, before its own sections. It is the
@@ -352,7 +401,8 @@ git switch -c auth-cleanup/3-ui-states
   1. **Every PR it builds on is merge-ready**: PR 1 … PR N-1 can each merge into its
      target as it stands, with nothing left to change. Their reviews are done (the user
      says so, or a read-only `gh pr view` shows approved with no changes requested) and
-     the base probe is clean. PR 1 builds on nothing, so it is `no` at its handoff.
+     the base probe is clean. PR 1 of a stack and every independent PR build on
+     nothing, so they are `no` at their handoff.
   2. **The whole stack is complete**: every PR has had its handoff, so the stack can
      be merged in one go.
 
@@ -362,15 +412,17 @@ git switch -c auth-cleanup/3-ui-states
   the command in its own block (`gh pr ready <number>`, which the user runs) and update
   its Draft field on the board. A PR whose base PR gets new changes requested goes back
   to `yes`; tell the user (`gh pr ready <number> --undo`).
-- **Next branch**: give the name and the create command, and say the user should commit
-  this PR's work first. Leave it out for the last PR.
+- **Next branch**: give the name and the create command of the next PR in the plan, and
+  say the user should commit this PR's work first. For the next PR in a stack it branches
+  from this one; for an independent PR it branches from the base
+  (`git switch -c <branch> origin/<base>`). Leave it out when no PR is left.
 
-In the same turn, set the PR to `Ready` on the Stack tab, fill its whole config there
+In the same turn, set the PR to `Ready` on the PRs tab, fill its whole config there
 (the body included), and republish before you reply, so the
 board link already has the body when the user reads the reply. When
 the user says they opened it, record the number and link. When it is merged, mark it
-`Merged`, ask which merge method was used, and follow *When the base moves* for the PR
-above it. Later PR bodies then refer to it by number.
+`Merged`, ask which merge method was used, and, in a stack, follow *When the base moves*
+for the PR above it. Later PR bodies then refer to it by number.
 
 PR statuses: `Planned` → `In progress` (its first job approved) → `Ready` (handed over) →
 `Opened` (#n) → `Merged`. A PR's progress is jobs Fixed / jobs in it.
@@ -459,8 +511,8 @@ is not an exception; small is not the criterion.
 
 **Never commit.** Implementation lands **uncommitted** in the working tree. No
 `git commit`, `git push`, `gh pr create`, amend or tag unless the user says so, in words —
-and being told once is not permission for the next time. **A stack does not change this.**
-Saying yes to the stack is not permission to commit, branch, push or open PRs. You give
+and being told once is not permission for the next time. **A PR plan or a stack does not
+change this.** A PR plan, or a yes to a stack, is not permission to commit, branch, push or open PRs. You give
 the config and the branch names, and the user runs them. Permission covers only what the
 user named: "create the branches for this stack" covers branches, not commits or pushes.
 
@@ -478,7 +530,7 @@ and add Method by copying the Queue panel and changing its id.
 | Jobs | yes | Always. Every job in rank order: its tasks, why they are together, files touched, effort · risk, and the review once it is done. |
 | Queue | yes | Always. Open tasks in rank order — severity weighted by reach, certainty and cost — with the job each belongs to. |
 | Tasks | yes | Always. Every task, grouped by area, with the status filter chips. |
-| Stack | yes | Only when the user said yes to a stacked PR. The stack drawn top to bottom, with the base probe on the base line, and per PR: status, progress, branch → target, sync line, its jobs, and the config to copy. Delete it otherwise. |
+| PRs | yes | Always, once jobs exist, whatever the shape. The overview table (shape, branch → target, builds on, jobs), one line per PR on why it is independent or what it builds on, then each chain under its base line, and per PR: shape pill, status, progress, branch → target, sync line, its jobs, and the config to copy. Never delete it because nothing is stacked. |
 | Manual tests | yes | Only when something needs a browser, a real provider, or a judgement call. |
 | Method | add | Only when how the task list was produced is itself worth recording. |
 
@@ -513,7 +565,9 @@ the link once, in one line.
   PR's work still uncommitted in the tree.
 - Creating a branch, committing, pushing or opening a PR yourself because a stack exists.
 - A PR's last job reviewed without the PR handoff in the same turn.
-- A PR body pasted into chat. It belongs on the Stack tab, behind its Copy button.
+- A PR body pasted into chat. It belongs on the PRs tab, behind its Copy button.
+- A board with jobs but no PRs tab, or a PR on it with no shape pill or no config,
+  because nothing is stacked.
 - An `open` attribute on a PR config `<details>`. The page script expands only the last
   completed PR's config; every other one stays collapsed.
 - Draft set to `no` while a PR it builds on still needs changes and the stack is not

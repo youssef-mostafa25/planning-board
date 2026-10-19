@@ -13,17 +13,25 @@ investigate (read-only) --> publish board --> group the Queue into jobs
       --> implement the job together --> verify --> job review --> mark Fixed
 ```
 
-When the plan is big and splits cleanly, the agent may propose a **stacked PR**: the
-jobs cut into an ordered chain of PRs, each targeting the branch below it, shown with
-the jobs in each PR and an ASCII drawing of the stack. You decide; without your yes
-there is no stack. When a PR's last job is reviewed, the agent gives you the PR's
-short config in chat (head and target branch, title, draft, merge method, and labels
-or reviewers when the repo shows them), each part in its own block for copying, plus the
-next branch name. The PR body is written on the board's Stack tab with a Copy button,
-not in chat. PR 1's body opens with an overview of the whole stack and what each PR is
-responsible for. A PR stays a draft until every PR it builds on is merge-ready or the whole
-stack is complete, and the agent tells you when to mark one ready for review. It never branches, commits, pushes or opens the PR itself. The board
-gets a Stack tab with each PR's progress, branches and config.
+Every board has a **PRs tab**: which PR each job lands in, and whether each PR is
+**independent** (branches from the base, targets it, merges in any order) or
+**stacked** (targets the PR below it, merges in order). It opens with an overview table
+and a line per PR on why it is independent or what it builds on, then draws each chain
+under its base. Every PR has a copyable config from the start: head and target branch,
+title, the `git switch -c` command, draft and merge method.
+
+One PR or independent PRs are the agent's call, stated in one line. When the plan is big
+and splits cleanly, the agent may propose a **stacked PR**: the jobs cut into an ordered
+chain of PRs, each targeting the branch below it, shown with the jobs in each PR and an
+ASCII drawing of the stack. You decide; without your yes there is no stack. When a PR's
+last job is reviewed, stacked or not, the agent gives you the PR's short config in chat
+(head and target branch, title, draft, merge method, and labels or reviewers when the
+repo shows them), each part in its own block for copying, plus the next branch name. The
+PR body is written on the board's PRs tab with a Copy button, not in chat. PR 1 of a
+stack opens its body with an overview of the whole stack and what each PR is responsible
+for. A stacked PR stays a draft until every PR it builds on is merge-ready or the whole
+stack is complete, and the agent tells you when to mark one ready for review; an
+independent PR is never a draft. It never branches, commits, pushes or opens the PR itself.
 
 When `main` moves, the stack is left alone unless a read-only probe shows a conflict,
 the repo requires up-to-date branches, or a PR landed by squash. Then the stack is synced
@@ -85,7 +93,7 @@ checks staged changes before any commit and refuses if debug calls are present.
 
 | Skill | What it does |
 |---|---|
-| `planning-board` | The job loop: Queue tasks grouped into reviewable jobs, seven-heading proposals per task (Issue, Why, Fix, Gain, Effort, Risk, Legacy), approval per task or per job, a job review after implementation, an optional user-approved stacked-PR split with copyable PR configs, status lifecycle, and the board template (`template.html`). |
+| `planning-board` | The job loop: Queue tasks grouped into reviewable jobs, seven-heading proposals per task (Issue, Why, Fix, Gain, Effort, Risk, Legacy), approval per task or per job, a job review after implementation, a PRs tab on every board (independent and stacked PRs, each with a copyable config; a stack only with your yes), status lifecycle, and the board template (`template.html`). |
 | `merge-assistant` | Merge planning: parallel branch analysis, semantic-conflict detection, a tabbed review artifact with per-decision pickers (`merge-review-template.html`), then a `--no-commit` merge driven by your decisions. Also syncs planning-board's stacked PRs (Stack mode: full run for the base, verified propagation runs up the stack). |
 | `handoff` | Session handoff docs: grounded in `git` and real test runs, cumulative across sessions, with exact `file:line` references and copy-pasteable verification commands. |
 | `debug-log-sink` | Ephemeral cross-process debug logging: bundled stdlib collector (`debug-log-sink.py`), greppable `DEBUG_LOG_SINK` markers, a pre-commit guard, and two-tier cleanup verified by `git grep`. |
