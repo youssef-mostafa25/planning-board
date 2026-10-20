@@ -172,6 +172,13 @@
   td.loc{font-family:var(--mono);font-size:11px;line-height:1.5;width:22%;min-width:190px;color:var(--ink-2);word-break:break-word}
   td.loc b{color:var(--ink);font-weight:500}
 
+  /* Issue cell (Jobs, Queue, Issues tab): a linked number, or "none" with the origin. */
+  td.iss{font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--ink-2);width:1%}
+  td.iss a{text-decoration:none}
+  td.iss a:hover{text-decoration:underline}
+  td.iss .none{color:var(--ink-3)}
+  .ghead h2 a{color:inherit}
+
   td.what{min-width:300px}
   td.what .d{font-weight:600;display:block;margin-bottom:4px}
   td.what .f{color:var(--ink-2);font-size:12.5px;display:block}
@@ -297,6 +304,8 @@
       <!-- PRs: always. "N PRs on <base> · K stacked, M independent". Add
            "· No stack — declined" when the user said no to a proposed stack. -->
       <span><b>PRs</b> 3 PRs on main · 2 stacked, 1 independent</span>
+      <!-- Issues: only when a task comes from one. Numbers, then how many tasks have none. -->
+      <span><b>Issues</b> #12, #15 · 1 task with no issue</span>
     </div>
   </div>
   <div class="tally">
@@ -309,9 +318,12 @@
 
 <!-- Delete any tab that this board does not need, and its panel with it.
      Keep: Before you start, Jobs, PRs, Queue, Tasks. PRs stays whatever the PR shape:
-     one PR, independent PRs, a stack, or a mix. Optional: Manual tests, Method. -->
+     one PR, independent PRs, a stack, or a mix. Issues stays whenever any task comes
+     from an issue; delete it, the Issue columns and the header's Issues line only when
+     none does. Optional: Manual tests, Method. -->
 <nav class="tabs" role="tablist" aria-label="Sections">
   <button class="tab" role="tab" id="tab-proto" aria-controls="p-proto" aria-selected="true">Before you start <span class="c">read first</span></button>
+  <button class="tab" role="tab" id="tab-issues" aria-controls="p-issues" aria-selected="false">Issues <span class="c">2 + no issue</span></button>
   <button class="tab" role="tab" id="tab-jobs" aria-controls="p-jobs" aria-selected="false">Jobs <span class="c">3</span></button>
   <button class="tab" role="tab" id="tab-prs" aria-controls="p-prs" aria-selected="false">PRs <span class="c">3 · 2 stacked</span></button>
   <button class="tab" role="tab" id="tab-queue" aria-controls="p-queue" aria-selected="false">Queue <span class="c">4</span></button>
@@ -367,6 +379,11 @@
   </div>
 
   <div class="note">
+    <h3>Issues — every task traces to one, or says where it came from</h3>
+    <p>When tasks come from tracked issues, the <em>Issues</em> tab maps each issue to its tasks, jobs and PRs, and the Jobs and Queue tables carry an Issue column. A task with no issue is listed with its origin. Read issue states from the tracker, not memory. A PR body says <code>Closes #n</code> only when it finishes every remaining part of #n; otherwise <code>Refs #n</code>.</p>
+  </div>
+
+  <div class="note">
     <h3>Check the lane before you plan</h3>
     <p>Name every directory this job's fixes reach. Before editing anything outside the lane you were given, <b>ask once per job</b>, naming every directory. Do not implement across the boundary because the fix is small — small is not the criterion.</p>
   </div>
@@ -403,6 +420,61 @@
 </div>
 
 
+<!-- ========== ISSUES (whenever any task comes from an issue) ==========
+     Issue -> task -> job -> PR. Read every title and state from the tracker
+     (gh issue view <n> --json title,state), never from memory; re-read at each PR handoff.
+     1. note warn, only when it applies: an issue closed while its bug still reproduces,
+        or a PR body that closes an issue it does not fully cover.
+     2. One section per issue: number linked, title, state. A row per task: task, pill,
+        the part of the issue it covers, job, PR. One line under it: which PR closes the
+        issue, or "no single PR closes it" and what is left.
+     3. An issue in scope with no task (closed as intended, refuted): its section, one line why.
+     4. "No issue": every task that traces to none, with where it came from.
+     Closing keyword: a PR body says "Closes #n" only when that PR finishes every remaining
+     part of #n; otherwise "Refs #n". Pills here move with the task's row elsewhere. -->
+<div class="panel" id="p-issues" role="tabpanel" aria-labelledby="tab-issues" hidden>
+  <p class="lede">Where each piece of work comes from: <strong>issue → task → job → PR</strong>. Issue titles and states are read from the tracker. A task with no issue is in the last group, with where it came from.</p>
+
+  <div class="note warn">
+    <h3>Example warning: a PR would close an issue while part of it is open</h3>
+    <p>Shown only when it applies. For instance: a PR body says <code>Closes #15</code> while item 2 of #15 still waits on a decision, so merging it closes the issue early. Change the keyword to <code>Refs #15</code>, or settle item 2 first. Same box for an issue closed on the tracker whose bug still reproduces. Delete this note when nothing like it applies.</p>
+  </div>
+
+  <section class="group">
+    <div class="ghead"><h2><a href="https://github.com/OWNER/REPO/issues/12">#12</a>: issue title as the tracker shows it</h2><span class="rule"></span><span class="n">open · 2 tasks · PR 1</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>Task</th><th>Status</th><th>Part of the issue</th><th>Job</th><th>PR</th></tr></thead>
+      <tbody>
+        <tr class="s-open"><td class="id">01<span class="src">item 1</span></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line: the part of the issue this task covers.</span></td><td class="iss">A</td><td class="iss">PR 1</td></tr>
+        <tr class="s-open"><td class="id">03<span class="src">item 2</span></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line: the part of the issue this task covers.</span></td><td class="iss">A</td><td class="iss">PR 1</td></tr>
+      </tbody>
+    </table></div>
+    <p class="cfg-note">PR 1 closes #12: it covers every item.</p>
+  </section>
+
+  <section class="group">
+    <div class="ghead"><h2><a href="https://github.com/OWNER/REPO/issues/15">#15</a>: issue title as the tracker shows it</h2><span class="rule"></span><span class="n">open · 1 task · PR 2</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>Task</th><th>Status</th><th>Part of the issue</th><th>Job</th><th>PR</th></tr></thead>
+      <tbody>
+        <tr class="s-open"><td class="id">02<span class="src">item 1</span></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line: the part of the issue this task covers.</span></td><td class="iss">B</td><td class="iss">PR 2</td></tr>
+      </tbody>
+    </table></div>
+    <p class="cfg-note">No single PR closes #15: item 2 waits on a decision. PR 2 says <code>Refs #15</code>.</p>
+  </section>
+
+  <section class="group">
+    <div class="ghead"><h2>No issue</h2><span class="rule"></span><span class="n">1 task</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>Task</th><th>Status</th><th>Where it came from</th><th>Job</th><th>PR</th></tr></thead>
+      <tbody>
+        <tr class="s-open"><td class="id">04</td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line naming the task.</span><span class="f">Origin: a side catch while checking task 02 / the user asked on DATE / a PR review.</span></td><td class="iss">C</td><td class="iss">PR 3</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+</div>
+
+
 <!-- ========== JOBS ==========
      One row per job, in rank order (a job ranks by its highest-ranked task).
      Each job's PR sits under its letter (<span class="src">PR 1</span>), always.
@@ -413,11 +485,12 @@
   <p class="lede">Tasks are worked in <strong>jobs</strong>: groups that share files or a seam, implemented together and handed back as one change the user can review in one sitting. Take the top job that is not <span class="pill fixed">Fixed</span>.</p>
 
   <div class="tw"><table>
-    <thead><tr><th>Job</th><th>Status</th><th>Tasks &amp; why together</th><th>Files touched</th><th>Effort · Risk</th><th>Review</th></tr></thead>
+    <thead><tr><th>Job</th><th>Issue</th><th>Status</th><th>Tasks &amp; why together</th><th>Files touched</th><th>Effort · Risk</th><th>Review</th></tr></thead>
     <tbody>
-      <tr class="s-open"><td class="id">A<span class="src">PR 1</span></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">01, 03 — one line naming what the job fixes.</span><span class="f">Why these belong together: the file or seam they share.</span></td><td class="loc"><b>file.py</b><br>other_file.ts</td><td class="ev">—</td><td class="ev">After implementation: per-task <code>file:line</code>, read order, proof, <code>git diff -- &lt;files&gt;</code>.</td></tr>
-      <tr class="s-open"><td class="id">B<span class="src">PR 2</span></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">02 — a job of one.</span><span class="f">Why it stands alone: High risk, another lane, or nothing shares its files.</span></td><td class="loc"><b>file.go</b></td><td class="ev">—</td><td class="ev">—</td></tr>
-      <tr class="s-open"><td class="id">C<span class="src">PR 3</span></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">04 — unrelated to A and B.</span><span class="f">Lands in an independent PR: nothing in it depends on PR 1 or PR 2.</span></td><td class="loc"><b>other_dir/file.sql</b></td><td class="ev">—</td><td class="ev">—</td></tr>
+      <!-- Issue cell: each issue the job's tasks come from, linked; "none" plus the origin for a task with none. -->
+      <tr class="s-open"><td class="id">A<span class="src">PR 1</span></td><td class="iss"><a href="https://github.com/OWNER/REPO/issues/12">#12</a></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">01, 03 — one line naming what the job fixes.</span><span class="f">Why these belong together: the file or seam they share.</span></td><td class="loc"><b>file.py</b><br>other_file.ts</td><td class="ev">—</td><td class="ev">After implementation: per-task <code>file:line</code>, read order, proof, <code>git diff -- &lt;files&gt;</code>.</td></tr>
+      <tr class="s-open"><td class="id">B<span class="src">PR 2</span></td><td class="iss"><a href="https://github.com/OWNER/REPO/issues/15">#15</a></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">02 — a job of one.</span><span class="f">Why it stands alone: High risk, another lane, or nothing shares its files.</span></td><td class="loc"><b>file.go</b></td><td class="ev">—</td><td class="ev">—</td></tr>
+      <tr class="s-open"><td class="id">C<span class="src">PR 3</span></td><td class="iss"><span class="none">none<br>(side catch)</span></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">04 — unrelated to A and B.</span><span class="f">Lands in an independent PR: nothing in it depends on PR 1 or PR 2.</span></td><td class="loc"><b>other_dir/file.sql</b></td><td class="ev">—</td><td class="ev">—</td></tr>
     </tbody>
   </table></div>
 </div>
@@ -425,7 +498,8 @@
 
 <!-- ========== PRS (on every board; never deleted because nothing is stacked) ==========
      1. Overview table: every PR with its shape, branch -> target, what it builds on
-        ("—" for independent), its jobs, what it closes.
+        ("—" for independent), its jobs, and per issue whether it closes or only addresses
+        it ("closes" only when it finishes every remaining part; see the Issues tab).
      2. One line per PR on why it is independent or what it builds on.
      3. Chains, each with a .chain-h label and its own <ol class="stack">: base line
         first, then its PRs. A stack is one chain, each PR targeting the item above it.
@@ -467,11 +541,11 @@
   <section class="group">
     <div class="ghead"><h2>Overview</h2><span class="rule"></span><span class="n">3 PRs · 2 stacked · 1 independent</span></div>
     <div class="tw"><table>
-      <thead><tr><th>PR</th><th>Shape</th><th>Branch → target</th><th>Builds on</th><th>Jobs</th><th>Closes</th></tr></thead>
+      <thead><tr><th>PR</th><th>Shape</th><th>Branch → target</th><th>Builds on</th><th>Jobs</th><th>Issues</th></tr></thead>
       <tbody>
-        <tr><td class="id">1</td><td class="st"><span class="pill shape-stack">Stacked</span></td><td class="loc"><b>topic/1-slug</b> → main</td><td class="ev">— (bottom of chain 1)</td><td class="what"><span class="d">A</span></td><td class="ev">#issue</td></tr>
-        <tr><td class="id">2</td><td class="st"><span class="pill shape-stack">Stacked</span></td><td class="loc"><b>topic/2-slug</b> → topic/1-slug</td><td class="ev">PR 1</td><td class="what"><span class="d">B</span></td><td class="ev">#issue</td></tr>
-        <tr><td class="id">3</td><td class="st"><span class="pill shape-ind">Independent</span></td><td class="loc"><b>other/fix-slug</b> → main</td><td class="ev">—</td><td class="what"><span class="d">C</span></td><td class="ev">#issue</td></tr>
+        <tr><td class="id">1</td><td class="st"><span class="pill shape-stack">Stacked</span></td><td class="loc"><b>topic/1-slug</b> → main</td><td class="ev">— (bottom of chain 1)</td><td class="what"><span class="d">A</span></td><td class="ev">closes #12</td></tr>
+        <tr><td class="id">2</td><td class="st"><span class="pill shape-stack">Stacked</span></td><td class="loc"><b>topic/2-slug</b> → topic/1-slug</td><td class="ev">PR 1</td><td class="what"><span class="d">B</span></td><td class="ev">addresses #15 (item 1; item 2 open)</td></tr>
+        <tr><td class="id">3</td><td class="st"><span class="pill shape-ind">Independent</span></td><td class="loc"><b>other/fix-slug</b> → main</td><td class="ev">—</td><td class="what"><span class="d">C</span></td><td class="ev">none (task 04 has no issue)</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -518,6 +592,8 @@ Two or three sentences: what the whole stack does, and why it is split.
 
 ## Summary
 One to three sentences on this PR.
+
+Closes #12
 
 ## Stack
 PR 1 of 2 in this stack — targets main. PR 2 (topic/2-slug) builds on this.
@@ -613,12 +689,12 @@ Start at file.py, then other_file.ts.
   <p class="lede">Open tasks in the order they are meant to be worked. <strong>Rank is not severity</strong> — it is severity weighted by how much of the product the task actually reaches, how certain the diagnosis is, and how cheap the fix is. A task that reaches <span class="pill fixed">Fixed</span> leaves this tab and the ranks below close up.</p>
 
   <div class="tw"><table>
-    <thead><tr><th>Rank</th><th>#</th><th>Status</th><th>Task</th><th>Job</th><th>Lane</th><th>Effort · Risk</th></tr></thead>
+    <thead><tr><th>Rank</th><th>#</th><th>Issue</th><th>Status</th><th>Task</th><th>Job</th><th>Lane</th><th>Effort · Risk</th></tr></thead>
     <tbody>
-      <tr class="s-open"><td class="id">1</td><td class="id">01</td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line naming the task.</span></td><td class="id">A</td><td class="loc">dir/</td><td class="ev">—</td></tr>
-      <tr class="s-open"><td class="id">2</td><td class="id">02</td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line naming the task.</span></td><td class="id">B</td><td class="loc">dir/</td><td class="ev">—</td></tr>
-      <tr class="s-open"><td class="id">3</td><td class="id">03</td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line naming the task.</span><span class="f">Pulled into job A: shares file.py with 01.</span></td><td class="id">A</td><td class="loc">dir/</td><td class="ev">—</td></tr>
-      <tr class="s-open"><td class="id">4</td><td class="id">04</td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line naming the task.</span></td><td class="id">C</td><td class="loc">other_dir/</td><td class="ev">—</td></tr>
+      <tr class="s-open"><td class="id">1</td><td class="id">01</td><td class="iss"><a href="https://github.com/OWNER/REPO/issues/12">#12</a></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line naming the task.</span></td><td class="id">A</td><td class="loc">dir/</td><td class="ev">—</td></tr>
+      <tr class="s-open"><td class="id">2</td><td class="id">02</td><td class="iss"><a href="https://github.com/OWNER/REPO/issues/15">#15</a></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line naming the task.</span></td><td class="id">B</td><td class="loc">dir/</td><td class="ev">—</td></tr>
+      <tr class="s-open"><td class="id">3</td><td class="id">03</td><td class="iss"><a href="https://github.com/OWNER/REPO/issues/12">#12</a></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line naming the task.</span><span class="f">Pulled into job A: shares file.py with 01.</span></td><td class="id">A</td><td class="loc">dir/</td><td class="ev">—</td></tr>
+      <tr class="s-open"><td class="id">4</td><td class="id">04</td><td class="iss"><span class="none">none</span></td><td class="st"><span class="pill open">Open</span></td><td class="what"><span class="d">One line naming the task.</span></td><td class="id">C</td><td class="loc">other_dir/</td><td class="ev">—</td></tr>
     </tbody>
   </table></div>
 </div>
@@ -639,6 +715,8 @@ Start at file.py, then other_file.ts.
     <button class="chip" data-st="fixed" aria-pressed="false"><span class="dot fixed"></span>Fixed 0</button>
   </div>
 
+  <!-- Group by area, or by issue when tasks come from issues: then each group's heading
+       links the issue ("#12: title"), and tasks with none go in a last "No issue" group. -->
   <section class="group" data-group>
     <div class="ghead"><h2>Area name</h2><span class="rule"></span><span class="n" data-gcount>4</span></div>
     <div class="tw"><table>

@@ -1,6 +1,6 @@
 ---
 name: planning-board
-description: Use when the user says to start a job, take one on, move to the next job, or asks for a plan before implementation — any piece of work with more than one task, where each task needs its own written proposal approved in words before any implementation file is touched, tracked on a published status page. Large plans can be split into a stacked PR, only if the user agrees.
+description: Use when the user says to start a job, take one on, move to the next job, work through a set of tracked issues, or asks for a plan before implementation — any piece of work with more than one task, where each task needs its own written proposal approved in words before any implementation file is touched, tracked on a published status page. Large plans can be split into a stacked PR, only if the user agrees.
 ---
 
 # Planning Board
@@ -29,7 +29,12 @@ one, drawn on its **PRs tab** with a copyable config per PR. It is one of these 
 
 ```
 PR plan (always) --> PR 1, PR 2, ... (each independent or stacked) --> jobs --> tasks
+issues (when any task comes from one) --> tasks          shown on the Issues tab
 ```
+
+**Issues.** When any task comes from a tracked issue (GitHub, Jira, Azure DevOps…), the
+board has an **Issues tab** tracing every issue to its tasks, jobs and PRs, and the Jobs
+and Queue tables carry an **Issue** column. See *Issues*.
 
 **The rule: nothing is implemented until the user says yes, in words, to that specific
 task** — naming the task, or naming the job that contains it. A thumbs-up on another
@@ -42,7 +47,8 @@ task or job, silence, or your own confidence that the fix is obvious are not app
   top job on its Jobs tab. A board with no Jobs tab (made before jobs) → run step 3 on
   it first, adding the Jobs panel and the Job column from `template.html`. A board with
   jobs but no PRs tab (or the older Stack tab) gets step 3b at the next job boundary,
-  adding the PRs panel from `template.html`.
+  adding the PRs panel from `template.html`. A board with tasks from issues but no
+  Issues tab gets one at the next job boundary, with the Issue columns (*Issues*).
 - Any work with 2+ tasks that will be worked over more than one turn.
 - The user asks for a plan, or asks what is wrong with something and what it would take to fix.
 
@@ -90,6 +96,10 @@ user says "start a job" / "take the next job"
 in the scratchpad, a suite that already exists. Do **not** edit a file the fix would
 touch, and do not leave scratch files in the repo. Plan against the code, not against
 what the user told you — if the premise does not hold, say so instead of proposing a fix.
+Record each task's **origin**: the issue and the part of it the task covers, or, with no
+issue, where it came from (a side catch while checking task NN, the user's request on a
+date, a PR review). Read each issue's title and state from the tracker
+(`gh issue view <n> --json title,state`), never from memory.
 
 **Step 2 — publish the skeleton** if the investigation runs longer than a couple of tool
 calls, so the user has something to watch. Tasks start at `Open`. Give them the link once.
@@ -97,7 +107,8 @@ calls, so the user has something to watch. Tasks start at `Open`. Give them the 
 **Step 3 — group.** Split the Queue into jobs using the rules in *Forming jobs* below.
 Fill the Jobs tab and the Job column on the Queue. Rank jobs, not just tasks. Effort and
 risk for jobs not yet presented are provisional — mark them `~M · ~Low` until their
-proposals are written.
+proposals are written. If any task comes from an issue, fill the Issues tab and the Issue
+columns in the same publish (*Issues*).
 
 **Step 3b — PR plan.** Put every job in a PR and fill the PRs tab, following *PR plan*
 below. Each PR gets its shape (`Independent` or `Stacked`) and its config from the start.
@@ -186,6 +197,39 @@ change without re-deriving it:
 5. **What did not change** — anything the user might expect to be touched and was not, and
    any task that left the job.
 
+## Issues
+
+**If any task comes from a tracked issue, the board has an Issues tab, and the Jobs and
+Queue tables each have an Issue column.** A board where no task comes from an issue has
+neither.
+
+**The Issue column** (Jobs and Queue): the issue number, linked, for each task the row
+covers, or `none` with the origin in a few words ("none (PR 5 review)").
+
+**The Issues tab**, top to bottom:
+
+1. **Warnings**, in a `note warn`, when either holds: an issue is closed on the tracker
+   but its bug still reproduces, or a PR body closes an issue it does not fully cover.
+   For the closed one, say so in chat too and give `gh issue reopen <n>` for the user to
+   run; PR bodies use `Refs #n` for it until it is reopened.
+2. **One section per issue**: the number linked, the title, and the state as the tracker
+   shows it now. A row per task: task, status pill, the part of the issue it covers (its
+   item number when the issue lists items), job, PR. Under the table, one line: which PR
+   closes the issue, or "no single PR closes it" and what is left.
+3. **An issue in scope with no task** (closed as intended, refuted): its section with one
+   line on why.
+4. **No issue**: every task that traces to none, with its origin.
+
+**Closing keywords.** A PR body says `Closes #n` only when that PR finishes every remaining
+part of #n: each of its tasks is Fixed or decided, and the issue has no open question.
+Otherwise it says `Refs #n`, and the issue's section says what is left. The PRs
+overview's Issues column says, per issue, whether the PR closes or addresses it.
+
+**Keep it current.** Re-read each issue's state at every PR handoff and whenever the user
+says a PR was opened or merged. A change (closed, reopened, a comment that adds a
+question) updates its section in the same turn. An issue that would close while part of
+it is still open is said in chat too, with the fix: change the keyword to `Refs #n`.
+
 ## PR plan
 
 Every job belongs to exactly one PR, and every PR is on the PRs tab. **The tab is never
@@ -214,7 +258,8 @@ user's call.
    That happened once (2026-10-20) and reached a teammate's branch before anyone noticed.
 
 Above the PRs, an **overview table** lists every PR with its shape, branch → target,
-what it builds on ("—" for independent), its jobs, and the issues it closes. Then each
+what it builds on ("—" for independent), its jobs, and the issues it closes or addresses
+(*Issues*). Then each
 **chain** is drawn under its own base line: a stack is one chain with each PR under the
 one it targets, and an independent PR is a chain of one. Under the overview, give one
 line per PR saying why it is independent or what it builds on.
@@ -386,7 +431,8 @@ git switch -c auth-cleanup/3-ui-states --no-track
 
 - **Title** follows the repo's PR/commit style (`git log --oneline`).
 - **Body**: if the repo has `.github/pull_request_template.md` (or a `PULL_REQUEST_TEMPLATE`
-  folder), fill that. Otherwise use these sections: *Summary* (1–3 sentences), *Stack*
+  folder), fill that. Otherwise use these sections: *Summary* (1–3 sentences, then one
+  `Closes #n` or `Refs #n` line per issue, chosen by the rule in *Issues*), *Stack*
   (PR n of N; the PR it depends on, by number once the user has given it, else by branch;
   the PR that builds on it; for an independent PR, "Independent: targets `<base>` and
   builds on no other PR"), *Changes* (per task: what and where, from the job reviews),
@@ -508,7 +554,8 @@ done". Every move updates **three things together**:
 The **Queue** is maintained too: a task that reaches Fixed leaves it and the ranks close
 up. If fixing one task changes another's priority, say so and re-rank. The **Jobs** tab
 moves with it: a task leaving a job is removed from that job's row, and a finished job
-keeps its row with its review.
+keeps its row with its review. The **Issues** tab moves too: a task's pill there matches
+its row, and a new task arrives with its origin, in its issue's section or under No issue.
 
 **Republish to the same URL** (pass the artifact's `url`) so the link keeps working. If
 the board and the code disagree, everyone downstream is working from the wrong map.
@@ -531,12 +578,13 @@ user named: "create the branches for this stack" covers branches, not commits or
 Copy `template.html` (next to this SKILL.md) and fill it in. It is a single self-contained file: tabs, status
 pills, filter chips and tally, light and dark, works at phone width.
 
-**Scale the tabs to the board.** The template ships six; delete what the board does not need,
+**Scale the tabs to the board.** The template ships seven; delete what the board does not need,
 and add Method by copying the Queue panel and changing its id.
 
 | Tab | In template | Keep / add it when |
 |---|---|---|
 | Before you start | yes | Always. It is the protocol the user and the next agent read. |
+| Issues | yes | Whenever any task comes from an issue: issue → tasks → jobs → PRs, the No issue group, and the warnings (*Issues*). Delete it, and the Issue columns on Jobs and Queue, only when no task comes from one. |
 | Jobs | yes | Always. Every job in rank order: its tasks, why they are together, files touched, effort · risk, and the review once it is done. |
 | Queue | yes | Always. Open tasks in rank order — severity weighted by reach, certainty and cost — with the job each belongs to. |
 | Tasks | yes | Always. Every task, grouped by area, with the status filter chips. |
@@ -580,6 +628,10 @@ the link once, in one line.
 - A PR body pasted into chat. It belongs on the PRs tab, behind its Copy button.
 - A board with jobs but no PRs tab, or a PR on it with no shape pill or no config,
   because nothing is stacked.
+- A task that comes from an issue on a board with no Issues tab, or a Jobs or Queue row
+  with no Issue cell. A task with no issue still gets its origin, under No issue.
+- `Closes #n` in a PR body while part of #n is open, undecided, or in another PR.
+- An issue's state or title written from memory instead of read from the tracker.
 - An `open` attribute on a PR config `<details>`. The page script expands only the last
   completed PR's config; every other one stays collapsed.
 - Draft set to `no` while a PR it builds on still needs changes and the stack is not

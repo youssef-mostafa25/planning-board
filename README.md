@@ -40,6 +40,14 @@ by **merging, never rebasing**, one link at a time from the bottom up, each thro
 merge-assistant: a full run for `main` into PR 1, and a lighter propagation run for each
 PR above it. Every link is verified before the next one starts.
 
+When tasks come from tracked issues, the board also has an **Issues tab**: every issue,
+with its title and state read from the tracker, mapped to its tasks, jobs and PRs, and
+a "No issue" group saying where every other task came from (a side catch, your request,
+a PR review). The Jobs and Queue tables carry an Issue column. A PR body says
+`Closes #n` only when that PR finishes all of #n; otherwise `Refs #n`, and the board
+warns when a PR would close an issue early or when a closed issue's bug still
+reproduces.
+
 A **job** is a group of Queue tasks that share files or a seam, implemented together
 and handed back as one change you can review in one sitting: what changed per task
 (`file:line`), the order to read it in, the proof, and a `git diff` per task. Every
