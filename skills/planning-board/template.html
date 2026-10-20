@@ -440,8 +440,10 @@
        p-merged  / pill pr-merged   Merged
      Progress = jobs Fixed / jobs in the PR; set the bar width to the same fraction.
      Config from the start: head branch, target, title, create command, draft, merge method.
-     Create: "git switch -c <branch> origin/<base>" for an independent PR or PR 1 of a stack;
-     "git switch -c <branch>" from the PR below for a stacked PR.
+     Create: "git switch -c <branch> --no-track origin/<base>" for an independent PR or PR 1
+     of a stack; "git switch -c <branch> --no-track" from the PR below for a stacked PR.
+     ALWAYS --no-track: without it the base becomes the branch's upstream, and a push or
+     editor Sync lands the commits on the base itself instead of in a PR targeting it.
      Draft: "no" for an independent PR (it builds on nothing). For a stacked PR, "yes"
      unless every PR it builds on is merge-ready as it stands, or the whole stack
      is complete; the .cfg-note under it says why. Re-check it when a PR it builds on is approved,
@@ -505,7 +507,7 @@
           <div class="cfg-row"><span class="cfg-k">Head branch</span><code class="cfg-v">topic/1-slug</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row"><span class="cfg-k">Target</span><code class="cfg-v">main</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row"><span class="cfg-k">Title</span><code class="cfg-v">PR title, as it will be opened</code><button class="copy" type="button">Copy</button></div>
-          <div class="cfg-row"><span class="cfg-k">Create</span><code class="cfg-v">git switch -c topic/1-slug origin/main</code><button class="copy" type="button">Copy</button></div>
+          <div class="cfg-row"><span class="cfg-k">Create</span><code class="cfg-v">git switch -c topic/1-slug --no-track origin/main</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row block"><span class="cfg-k">Body</span><button class="copy" type="button">Copy</button><pre class="cfg-v">## Stack overview
 Two or three sentences: what the whole stack does, and why it is split.
 
@@ -561,7 +563,7 @@ Start at file.py, then other_file.ts.
           <div class="cfg-row"><span class="cfg-k">Head branch</span><code class="cfg-v">topic/2-slug</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row"><span class="cfg-k">Target</span><code class="cfg-v">topic/1-slug</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row"><span class="cfg-k">Title</span><code class="cfg-v">PR title, as it will be opened</code><button class="copy" type="button">Copy</button></div>
-          <div class="cfg-row"><span class="cfg-k">Create</span><code class="cfg-v">git switch -c topic/2-slug</code><button class="copy" type="button">Copy</button></div>
+          <div class="cfg-row"><span class="cfg-k">Create</span><code class="cfg-v">git switch -c topic/2-slug --no-track</code><button class="copy" type="button">Copy</button></div>
           <p class="cfg-note">Run from topic/1-slug once PR 1's work is committed.</p>
           <div class="cfg-row"><span class="cfg-k">Draft</span><code class="cfg-v">yes</code><button class="copy" type="button">Copy</button></div>
           <p class="cfg-note">Draft until PR 1 is merge-ready or the whole stack is complete. Body is written at handoff, once the PR's jobs are reviewed. Last PR in this chain.</p>
@@ -594,7 +596,7 @@ Start at file.py, then other_file.ts.
           <div class="cfg-row"><span class="cfg-k">Head branch</span><code class="cfg-v">other/fix-slug</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row"><span class="cfg-k">Target</span><code class="cfg-v">main</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row"><span class="cfg-k">Title</span><code class="cfg-v">PR title, as it will be opened</code><button class="copy" type="button">Copy</button></div>
-          <div class="cfg-row"><span class="cfg-k">Create</span><code class="cfg-v">git switch -c other/fix-slug origin/main</code><button class="copy" type="button">Copy</button></div>
+          <div class="cfg-row"><span class="cfg-k">Create</span><code class="cfg-v">git switch -c other/fix-slug --no-track origin/main</code><button class="copy" type="button">Copy</button></div>
           <div class="cfg-row"><span class="cfg-k">Draft</span><code class="cfg-v">no</code><button class="copy" type="button">Copy</button></div>
           <p class="cfg-note">Not a draft: an independent PR builds on no other PR.</p>
           <div class="cfg-row"><span class="cfg-k">Merge method</span><code class="cfg-v">merge commit</code><button class="copy" type="button">Copy</button></div>

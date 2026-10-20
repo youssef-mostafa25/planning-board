@@ -205,9 +205,13 @@ user's call.
 2. **Status pill**, progress (jobs Fixed / jobs in it), branch → target, sync line, its
    jobs.
 3. **Config**, every field with its own Copy button: head branch, target, title, the
-   create command (`git switch -c <branch> origin/<base>` for an independent PR or PR 1
-   of a stack; `git switch -c <branch>` from the PR below for a stacked one), draft,
-   merge method. The **body** is added at handoff (*PR handoff*).
+   create command (`git switch -c <branch> --no-track origin/<base>` for an independent PR
+   or PR 1 of a stack; `git switch -c <branch> --no-track` from the PR below for a stacked
+   one), draft, merge method. The **body** is added at handoff (*PR handoff*).
+   **Every create command carries `--no-track`, with no exceptions.** Without it, a branch
+   started from `origin/<base>` gets `<base>` as its upstream, and the user's next push or
+   editor Sync lands the PR's commits directly on `<base>` instead of in a PR targeting it.
+   That happened once (2026-10-20) and reached a teammate's branch before anyone noticed.
 
 Above the PRs, an **overview table** lists every PR with its shape, branch → target,
 what it builds on ("—" for independent), its jobs, and the issues it closes. Then each
@@ -216,9 +220,13 @@ one it targets, and an independent PR is a chain of one. Under the overview, giv
 line per PR saying why it is independent or what it builds on.
 
 **Branch check, every PR.** Before the first edit of each PR, run
-`git branch --show-current` and `git status --short`. You should be on that PR's branch
-with a clean tree. If not, stop and say what is off. Never carry one PR's uncommitted work
-into another PR's branch, stacked or not.
+`git branch --show-current`, `git status --short` and
+`git rev-parse --abbrev-ref @{upstream}`. You should be on that PR's branch with a clean
+tree, and its upstream must be **none** (not pushed yet) or `origin/<its own name>`. An
+upstream naming any other branch, the base above all, is a stop: say so at once and give
+`git branch --unset-upstream`, before any edit and never only in a handoff. If anything
+else is off, stop and say what. Never carry one PR's uncommitted work into another PR's
+branch, stacked or not.
 
 ## Stacked PRs
 
@@ -372,7 +380,7 @@ Next branch: PR 3 targets this one
 auth-cleanup/3-ui-states
 ```
 ```
-git switch -c auth-cleanup/3-ui-states
+git switch -c auth-cleanup/3-ui-states --no-track
 ```
 ~~~
 
@@ -415,7 +423,9 @@ git switch -c auth-cleanup/3-ui-states
 - **Next branch**: give the name and the create command of the next PR in the plan, and
   say the user should commit this PR's work first. For the next PR in a stack it branches
   from this one; for an independent PR it branches from the base
-  (`git switch -c <branch> origin/<base>`). Leave it out when no PR is left.
+  (`git switch -c <branch> --no-track origin/<base>`). Leave it out when no PR is left.
+  Tell the user the first push sets the branch's own upstream:
+  `git push -u origin <branch>`.
 
 In the same turn, set the PR to `Ready` on the PRs tab, fill its whole config there
 (the body included), and republish before you reply, so the
@@ -564,6 +574,8 @@ the link once, in one line.
 - Editing for the next PR before the handoff and branch check, or with the previous
   PR's work still uncommitted in the tree.
 - Creating a branch, committing, pushing or opening a PR yourself because a stack exists.
+- A create command, or a branch you create, without `--no-track`; or a branch whose
+  upstream is any branch but its own name. A push to that upstream skips the PR entirely.
 - A PR's last job reviewed without the PR handoff in the same turn.
 - A PR body pasted into chat. It belongs on the PRs tab, behind its Copy button.
 - A board with jobs but no PRs tab, or a PR on it with no shape pill or no config,

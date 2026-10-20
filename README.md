@@ -18,7 +18,8 @@ Every board has a **PRs tab**: which PR each job lands in, and whether each PR i
 **stacked** (targets the PR below it, merges in order). It opens with an overview table
 and a line per PR on why it is independent or what it builds on, then draws each chain
 under its base. Every PR has a copyable config from the start: head and target branch,
-title, the `git switch -c` command, draft and merge method.
+title, the `git switch -c --no-track` command, draft and merge method. The branch never
+tracks its base, so a push or editor Sync cannot land a PR's commits on the base itself.
 
 One PR or independent PRs are the agent's call, stated in one line. When the plan is big
 and splits cleanly, the agent may propose a **stacked PR**: the jobs cut into an ordered
