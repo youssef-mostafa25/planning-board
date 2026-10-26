@@ -21,16 +21,23 @@ proposal, board updates and "never commit" rule apply here unchanged.
 1. **Read the review.**
    ```bash
    gh pr view <n> --json reviews,comments          # summary comment(s)
-   gh api repos/<owner>/<repo>/pulls/<n>/comments \
-     --jq '.[] | "\(.id) \(.path):\(.line) \(.body)"'   # inline findings
-   gh api graphql -f query='query{repository(owner:"<owner>",name:"<repo>"){pullRequest(number:<n>){reviewThreads(first:50){nodes{id isResolved comments(first:1){nodes{databaseId}}}}}}}'
+   gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments \
+     --jq '.[] | select(.user.login == "claude[bot]" and .in_reply_to_id == null)
+           | "\(.id) \(.path):\(.line) \(.body)"'       # bot findings, not replies
+   gh api graphql -f query='query{repository(owner:"<owner>",name:"<repo>"){pullRequest(number:<n>){reviewThreads(first:100){totalCount nodes{id isResolved comments(first:1){nodes{databaseId author{login}}}}}}}}' \
+     --jq '.data.repository.pullRequest.reviewThreads | "threads: \(.totalCount)", (.nodes[] | select(.isResolved == false and .comments.nodes[0].author.login == "claude") | "\(.id) \(.comments.nodes[0].databaseId)")'
    ```
-   Map each finding to its thread id (`PRRT_…`) by the comment's `databaseId`.
+   The GraphQL list is the work: each open bot thread (`PRRT_…`) and the
+   `databaseId` of its first comment, which matches a REST `id`. A REST
+   finding missing from it is already resolved. The bot is `claude[bot]` in
+   REST but `claude` in GraphQL. If `threads:` is over 100, stop and say so;
+   the list is cut.
 
 2. **Verify each finding against the code.** Read the cited lines and run a
    probe or test where you can. Each one is **Holds**, **Refuted** or **By
    design**, with the evidence. The review's "observations, not findings" are
-   not tasks; note them and leave them unless the user asks.
+   not tasks; note them and leave them unless the user asks. A thread opened
+   by anyone else is not this skill's to answer or resolve; leave it.
 
 3. **Write the proposals.** One per finding that holds, under the seven
    headings (issue, why, fix, gain, effort, risk, legacy). If a board exists
@@ -49,7 +56,13 @@ proposal, board updates and "never commit" rule apply here unchanged.
    commands. The user commits and pushes; you do not, unless told to in
    words. The threads must point at a pushed commit.
 
-6. **Answer and resolve each thread**, once `git rev-list @{u}..HEAD` is empty:
+6. **Answer and resolve each thread**, once GitHub shows the fix as the PR's
+   head. This must exit 0 and print the sha the replies name; on an error or
+   another sha, stop and tell the user:
+   ```bash
+   gh pr view <n> --json headRefOid -q .headRefOid
+   ```
+   Then, per thread:
    ```bash
    gh api repos/<owner>/<repo>/pulls/<n>/comments/<comment-id>/replies \
      -f body='Fixed in <sha>. <what changed>. Test: <name> fails on the previous code.'
