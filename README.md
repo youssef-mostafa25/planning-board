@@ -98,6 +98,21 @@ permanently, so you should commit that line. The log calls in your source files 
 not covered by `.gitignore`, so don't commit while a session is active. The skill
 checks staged changes before any commit and refuses if debug calls are present.
 
+## resolve-claude-pr-review
+
+Works through a review that the claude[bot] reviewer left on a pull request:
+
+```
+read threads --> verify each finding (holds / refuted / by design)
+      --> one proposal per finding --> failing test, then fix --> you commit and push
+      --> reply on and resolve each thread --> one closing PR comment
+```
+
+Each finding is handled through planning-board, so it gets a seven-heading proposal and
+a task on the board. Threads are resolved only after the fix is pushed, and each reply
+names the commit. The PR description is never edited; the closing comment records what
+the review changed, the tests that fail on the old code, and anything left as is.
+
 ## Skills
 
 | Skill | What it does |
@@ -106,6 +121,7 @@ checks staged changes before any commit and refuses if debug calls are present.
 | `merge-assistant` | Merge planning: parallel branch analysis, semantic-conflict detection, a tabbed review artifact with per-decision pickers (`merge-review-template.html`), then a `--no-commit` merge driven by your decisions. Also syncs planning-board's stacked PRs (Stack mode: full run for the base, verified propagation runs up the stack). |
 | `handoff` | Session handoff docs: grounded in `git` and real test runs, cumulative across sessions, with exact `file:line` references and copy-pasteable verification commands. |
 | `debug-log-sink` | Ephemeral cross-process debug logging: bundled stdlib collector (`debug-log-sink.py`), greppable `DEBUG_LOG_SINK` markers, a pre-commit guard, and two-tier cleanup verified by `git grep`. |
+| `resolve-claude-pr-review` | claude[bot] PR reviews: findings verified against the code, one planning-board proposal each, fixed test-first, answered and resolved per thread after the push, then one closing PR comment. Needs the `gh` CLI. |
 | `sha3bolly` | The explanation style proposals are written in: plain words, always a concrete example, a flowchart when steps chain. `planning-board` and `merge-assistant` depend on it, so it ships here. Created by [Habiba Abueldahab](https://github.com/abueldahabh) — original at [abueldahabh/sha3bolly](https://github.com/abueldahabh/sha3bolly), MIT licensed ([`skills/sha3bolly/LICENSE`](skills/sha3bolly/LICENSE)). |
 
 ## Install
@@ -133,6 +149,8 @@ For merge-assistant, say "merge my feature into main", "bring my branch up to da
 For debug-log-sink, say "I can't see the worker's logs", "correlate frontend and backend logs", or "remove the debug logs".
 
 For handoff, say "write a handoff", "hand this off", or "I'll continue in another session".
+
+For resolve-claude-pr-review, say "fix claude's review on #123" or "resolve the bot's comments".
 
 ## Adding a skill
 
