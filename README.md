@@ -9,9 +9,15 @@ Turns "start a job" into a disciplined loop:
 
 ```
 investigate (read-only) --> publish board --> group the Queue into jobs
-      --> next job: header + one proposal per task --> wait for approval in words
-      --> implement the job together --> verify --> job review --> mark Fixed
+      --> next task / job / PR: one proposal per task --> wait for approval in words
+      --> implement ONE job (or one task) --> verify --> review --> mark Fixed --> stop
 ```
+
+How much gets planned follows what you say: **"onto the next task"** plans one task,
+**"onto the next job"** every task in the job, **"onto the next PR"** every task in every
+job of that PR. Implementation never goes past one job: after each job (or task) you get
+its review, and the next one starts only when you say go on, unless you explicitly tell
+it not to stop.
 
 Every board has a **PRs tab**: which PR each job lands in, and whether each PR is
 **independent** (branches from the base, targets it, merges in any order) or

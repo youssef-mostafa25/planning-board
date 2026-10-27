@@ -1,6 +1,6 @@
 ---
 name: planning-board
-description: Use when the user says to start a job, take one on, move to the next job, work through a set of tracked issues, or asks for a plan before implementation — any piece of work with more than one task, where each task needs its own written proposal approved in words before any implementation file is touched, tracked on a published status page. Large plans can be split into a stacked PR, only if the user agrees.
+description: Use when the user says to start a job, take one on, move onto the next task, job or PR, work through a set of tracked issues, or asks for a plan before implementation — any piece of work with more than one task, where each task needs its own written proposal approved in words before any implementation file is touched, tracked on a published status page. Large plans can be split into a stacked PR, only if the user agrees.
 ---
 
 # Planning Board
@@ -37,14 +37,20 @@ board has an **Issues tab** tracing every issue to its tasks, jobs and PRs, and 
 and Queue tables carry an **Issue** column. See *Issues*.
 
 **The rule: nothing is implemented until the user says yes, in words, to that specific
-task** — naming the task, or naming the job that contains it. A thumbs-up on another
+task** — naming the task, or naming the job or PR that contains it. A thumbs-up on another
 task or job, silence, or your own confidence that the fix is obvious are not approval.
+
+**Plan as much as the user asks for; implement at most one job before they review it,**
+unless the user explicitly lifts that cap.
+"Next task" plans one task, "next job" one job, "next PR" every job in the PR. See *Plan
+scope*.
 
 ## When to use
 
-- The user says "start a job", "take the next job", "let's work on X", "plan this out".
-  No board yet → build one (steps 1–3), then take job 1. A board exists → take the
-  top job on its Jobs tab. A board with no Jobs tab (made before jobs) → run step 3 on
+- The user says "start a job", "onto the next task", "onto the next job", "onto the next
+  PR", "let's work on X", "plan this out". No board yet → build one (steps 1–3), then
+  present at the scope they asked for (*Plan scope*). A board exists → take the next
+  task, job or PR from its Jobs tab. A board with no Jobs tab (made before jobs) → run step 3 on
   it first, adding the Jobs panel and the Job column from `template.html`. A board with
   jobs but no PRs tab (or the older Stack tab) gets step 3b at the next job boundary,
   adding the PRs panel from `template.html`. A board with tasks from issues but no
@@ -69,24 +75,32 @@ user says "start a job" / "take the next job"
    A stack (only if it qualifies): propose it, draw it, STOP for yes / no / changes.
   |
   v
-4 PRESENT the next job: job header + one proposal per task in it
+4 PRESENT at the scope the user asked for (Plan scope):
+  next task: one proposal | next job: job header + one proposal per task
+  next PR: every job's header + one proposal per task, in PR order
   + move those tasks to "Plan submitted" (same turn)
   |
   v
-5 STOP and wait --(user approves the job or tasks, in words)--> Approved
+5 STOP and wait --(user approves the PR, jobs or tasks, in words)--> Approved
   |                                                                 |
   |<--(task rejected)-- back to Open, out of the job                v
-                                           6 IMPLEMENT the job's approved tasks together
+                                           6 IMPLEMENT ONE job's approved tasks together
+                                             (one task, in task scope). Never two jobs
+                                             unless the user lifted the cap in words.
                                                                     |
                                                                     v
                                            7 VERIFY each task --> Fixed
                                                                     |
                                                                     v
-                                           8 JOB REVIEW in chat + on the Jobs tab
+                                           8 REVIEW in chat + on the Jobs tab, then STOP
                                              (board updated in the SAME turn as each move)
                                                                     |
                                                     was that the PR's last job?
-                                                                    v
+                                              no: approved jobs left --> wait for the
+                                                  user's go after the review --> 6
+                                              no: none approved --> wait for next task /
+                                                  job / PR --> 4
+                                              yes v
                                            9 PR HANDOFF: body on the PRs tab (copy button),
                                              the short fields + next branch name in chat;
                                              branch check before the next PR's first edit
@@ -118,33 +132,86 @@ the user's answer before presenting job 1. A stack changes the order jobs are wo
 so it is settled first. While it waits, draw it as one chain labelled "Proposed stack:
 awaiting your yes".
 
-**Step 4 — present the next job.** Start with the job header (below), then one proposal
-per task in the job, in chat, under the seven headings. Never one proposal covering
-several tasks — the board tracks tasks, and a merged plan leaves the others with no
-recorded decision. In the same turn, set every task in the job to `Plan submitted` with
-its effort and risk letters on the row, and the job to `Plan submitted`.
+**Step 4 — present at the user's scope** (*Plan scope*): one task, one job, or every job
+in a PR. A job starts with the job header (below), then one proposal per task in it, in
+chat, under the seven headings. Never one proposal covering several tasks — the board
+tracks tasks, and a merged plan leaves the others with no recorded decision. In the same
+turn, set every presented task to `Plan submitted` with its effort and risk letters on
+the row, and each job whose tasks are all presented to `Plan submitted`.
 
-**Step 5 — stop.** The user may approve the whole job in one reply ("approve job B") or
-task by task. Approving a job approves its tasks; it does **not** answer their Legacy
+**Step 5 — stop.** The user may approve a whole PR or job in one reply ("approve PR 1",
+"approve job B") or task by task. Approving a PR or job approves its tasks; it does
+**not** answer their Legacy
 questions — each still needs its own answer before that point is implemented. A task they reject or park leaves the job (back to `Open`, or `Deferred`)
 and the job goes ahead without it; re-check that the rest still makes sense together.
 Ask for the lane exception here too (below), once per job, naming every directory the
 job reaches.
 
-**Step 6 — implement the job.** All of the job's approved tasks, in the order the job
-header gave. Every hunk belongs to exactly one task — no edit that serves none of them,
+**Step 6 — implement one job.** All of the job's approved tasks, in the order the job
+header gave; in task scope, the one approved task. **Never more than one job before the
+user has its review**, even when a whole PR is approved, unless the user lifted the cap
+(*Plan scope*). Every hunk belongs to exactly one task — no edit that serves none of them,
 no "while I was here" cleanups. Reviewability is the deliverable.
 
 **Step 7 — verify before claiming Fixed.** Run the checks for each task and quote what
 they printed. Not after writing the code — after proving it.
 
-**Step 8 — job review.** Hand the change back in the shape in *Job review* below, and
-put its one-line version in the job's Review cell. The job reaches `Fixed` when every
-task in it has.
+**Step 8 — review, then stop.** Hand the change back in the shape in *Job review* below
+(for one task, in task scope; all of them in one message when the user lifted the cap),
+and put its one-line version in the job's Review cell. The
+job reaches `Fixed` when every task in it has. End with what comes next and stop: "Next:
+Job C (tasks 04 05), plans approved. Say go to implement it." or "Say next task / next
+job / next PR to plan more."
 
 **Step 9 — PR handoff.** When the job just reviewed was the last one in its PR, stacked
 or independent, hand the PR over in the shape in *PR handoff* below, in the same turn as
 the job review.
+
+## Plan scope
+
+What the user says sets how much is **planned** at once. It never changes how much is
+**implemented** at once: one job, at most.
+
+| The user says | Step 4: present | Step 6: implement after approval, then stop |
+|---|---|---|
+| "onto the next task", "next task" | **One task**: the next task (below). One context line (`Task 03 · Job B, 2 of 3, after 01 · files: …`), then its proposal and its lane ask. | That task. Its review, then stop. |
+| "onto the next job", "next job", "start a job", "take the next job" | **One job**: the job header, then one proposal per task. | That job. Its review, then stop. |
+| "onto the next PR", "next PR", "plan the whole PR" | **One PR**: a line naming the PR and its jobs, then, per job in PR order, the job header and one proposal per task. Ask for every job's lane exception in the same message. | **The PR's first job only.** Its review, then stop. |
+
+**What "next" is.** Work stays inside the current PR, in PR plan order, then each job's
+header order, until that PR's handoff; then the next PR in the plan. The next task, job
+or PR is the first one there not yet `Fixed` (or `Refuted`, `By design`, `Deferred`,
+`Assigned out`). The Jobs tab's rank never pulls a job out of another PR forward.
+
+**"Next" on work already approved means implement, not re-present.** If the next task or
+job is already `Approved` (its plan came with a PR), "next task", "next job", "go" or
+"continue" implements it, capped as below. A unit with no approved plan gets its proposal.
+
+**Unclear wording** ("carry on", "next") with nothing approved waiting: use the scope the
+user last used on this board, a job if none, and name it in the first line ("Planning
+the next job, Job C. Say next task or next PR to change it.").
+
+**Approval covers only what was presented.** "Approve PR 2" approves the PR 2 tasks whose
+proposals the user has seen, not the rest. One answer may cover several Legacy questions
+when it names them or says "all" ("all legacy: drop it").
+
+**The cap: one job, then the user reviews.** After every job (every task, in task scope),
+give the review and stop. The next job is implemented only when the user, having had the
+review, says to go on in words: "go", "next job", "continue", or an approval of the
+review ("looks good", "lgtm"). Plans the user
+approved earlier, for a whole PR, are approval of those tasks, not this go: each further
+job of the PR still waits for it. In task scope, the next task waits for "next task".
+
+**Only the user lifts the cap**, explicitly and only as far as they say. "Implement all of
+PR 1 without stopping" covers PR 1's approved jobs, not PR 2. Even then, work job by job:
+the board moves per job, each job gets its own job review, and they are handed back in job
+order in one message at the end. A task whose Legacy or lane question is still unanswered
+is held at `Approved`, with any task that depends on it, and the rest goes on; the final
+message lists what was held and why. A failed branch check stops the whole run.
+
+**Task scope inside a job.** The job header's order still holds. When a task closes out its
+job (the last one to reach Fixed), the review also gives the job's one-line review for
+its Review cell; if that was the PR's last job, the PR handoff follows in the same turn.
 
 ## Forming jobs
 
@@ -480,7 +547,7 @@ the user says they opened it, record the number and link. When it is merged, mar
 `Merged`, ask which merge method was used, and, in a stack, follow *When the base moves*
 for the PR above it. Later PR bodies then refer to it by number.
 
-PR statuses: `Planned` → `In progress` (its first job approved) → `Ready` (handed over) →
+PR statuses: `Planned` → `In progress` (its first task approved) → `Ready` (handed over) →
 `Opened` (#n) → `Merged`. A PR's progress is jobs Fixed / jobs in it.
 
 ## The seven headings
@@ -606,6 +673,12 @@ the link once, in one line.
 ## Red flags — stop
 
 - About to edit an implementation file for a task that is not `Approved`.
+- Presenting a whole job when the user said "next task", or one job when they said "next
+  PR".
+- Implementing a second job (or a second task, in task scope) before the user has had the
+  review and said to go on. Approved PR plans are not that go.
+- Reading "approve PR 1" as "implement PR 1 in one sitting". Only "without stopping", or
+  words like it, lifts the one-job cap, and only for what the user named.
 - Writing one proposal that covers several tasks — a job has a header plus one proposal
   per task, never a merged plan.
 - Implementing a task that is not in the job being worked, or an edit that serves no
