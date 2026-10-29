@@ -8,10 +8,15 @@ My Claude Code skills, collected in one plugin. Once installed they show up as
 Turns "start a job" into a disciplined loop:
 
 ```
-investigate (read-only) --> publish board --> group the Queue into jobs
+investigate (read-only) --> ask every question in one round --> publish board
+      --> group the Queue into jobs
       --> next task / job / PR: one proposal per task --> wait for approval in words
       --> implement ONE job (or one task) --> verify --> review --> mark Fixed --> stop
 ```
+
+Every question the plan needs (which tasks, legacy, approach choices, lanes, the stack)
+is asked in one round before the board exists, so every task on the board is ready to
+implement and only needs your approval. All PR configs on the board stay collapsed.
 
 How much gets planned follows what you say: **"onto the next task"** plans one task,
 **"onto the next job"** every task in the job, **"onto the next PR"** every task in every
@@ -42,9 +47,11 @@ independent PR is never a draft. It never branches, commits, pushes or opens the
 
 When `main` moves, the stack is left alone unless a read-only probe shows a conflict,
 the repo requires up-to-date branches, or a PR landed by squash. Then the stack is synced
-by **merging, never rebasing**, one link at a time from the bottom up, each through
-merge-assistant: a full run for `main` into PR 1, and a lighter propagation run for each
-PR above it. Every link is verified before the next one starts.
+by **merging** (rebasing only when you ask), one PR at a time from the bottom up, each
+through merge-assistant: a full run for `main` into PR 1, and a lighter propagation run
+for each PR above it. Every link is verified before the next one starts. A PR in the
+middle that needs a new commit is synced first, then gets the commit, then the PRs above
+it are synced.
 
 When tasks come from tracked issues, the board also has an **Issues tab**: every issue,
 with its title and state read from the tracker, mapped to its tasks, jobs and PRs, and

@@ -335,7 +335,7 @@
 <!-- ========== BEFORE YOU START ========== -->
 <div class="panel" id="p-proto" role="tabpanel" aria-labelledby="tab-proto">
 
-  <p class="lede">If you have been asked to work on this board, <strong>this page is the work — not the code change</strong>. You take the next task, job or PR from the <em>Jobs</em> tab — whichever the user asked for — write a proposal for each of its tasks in the shape below, update their rows, and <strong>come back for approval before touching any implementation file</strong>.</p>
+  <p class="lede">If you have been asked to work on this board, <strong>this page is the work — not the code change</strong>. You take the next task, job or PR from the <em>Jobs</em> tab — whichever the user asked for — write a proposal for each of its tasks in the shape below, update their rows, and <strong>come back for approval before touching any implementation file</strong>. Every question was asked and answered before this board was published, so every task here is ready: approval is all it still needs.</p>
 
   <div class="note warn">
     <h3>The rule</h3>
@@ -356,14 +356,14 @@
         <tr class="s-open"><td class="id">4<span class="src">What we gain</span></td><td class="what"><span class="d">The behaviour afterwards, stated as something observable.</span><span class="f">"Reloading the page shows the chart again" — not "improves correctness". If the gain is invisible until something else is also fixed, say which task.</span></td><td class="ev">Benefits that cannot be observed or measured. Padding a small fix into a big win.</td></tr>
         <tr class="s-open"><td class="id">5<span class="src">Effort</span></td><td class="what"><span class="d"><b>S</b>, <b>M</b> or <b>L</b>, with the reason.</span><span class="f"><b>S</b> — one file, one change, covered by a suite that already exists. <b>M</b> — a few files or one seam, needs a new test. <b>L</b> — crosses a service boundary, or needs a migration, a contract change or a design decision; the plan must name the decision.</span></td><td class="ev">An hours estimate. The letter plus the reason is what is wanted.</td></tr>
         <tr class="s-open"><td class="id">6<span class="src">Risk</span></td><td class="what"><span class="d"><b>Low</b>, <b>Medium</b> or <b>High</b>, plus how you would verify.</span><span class="f"><b>Low</b> — the blast radius is the thing being fixed. <b>Medium</b> — a shared path, so a mistake reaches other features; name a verification step beyond "tests pass". <b>High</b> — can destroy or orphan data, change a persisted shape, or move behaviour no test asserts; needs a rollback plan and a check against real data.</span></td><td class="ev">Naming a risk level with no verification step attached. "Low risk" on a migration or a shared path.</td></tr>
-        <tr class="s-open"><td class="id">7<span class="src">Legacy</span></td><td class="what"><span class="d">Name it, price it, recommend — then <b>ask</b>.</span><span class="f">(1) What legacy logic is in reach: the old shape, name, column, route or code path, and where it is read or written. (2) What we lose without it, concretely, and who sees it. (3) Your recommendation — support it or drop it, and why. (4) <b>The user decides.</b> There is no default either way.</span></td><td class="ev">Removing the old path because it looks dead. Quietly adding a fallback or a shim and not declaring it. "Not sure" — you read the file, so you know.</td></tr>
+        <tr class="s-open"><td class="id">7<span class="src">Legacy</span></td><td class="what"><span class="d">State the decision the user made in the question round.</span><span class="f">(1) What legacy logic is in reach: the old shape, name, column, route or code path, and where it is read or written. (2) What we lose without it, concretely, and who sees it. (3) Your recommendation — support it or drop it, and why. (4) <b>The user decides.</b> There is no default either way.</span></td><td class="ev">Removing the old path because it looks dead. Quietly adding a fallback or a shim and not declaring it. "Not sure" — you read the file, so you know.</td></tr>
       </tbody>
     </table></div>
   </section>
 
   <div class="note warn">
     <h3>Legacy is the user's decision, not yours</h3>
-    <p><b>There is no default.</b> Do not assume the old path is removed, and do not assume it is kept. Heading 7 states what the legacy logic is, what is lost without it, and which way you would go — and then <b>stops and asks</b>. Nothing is implemented on that point until the answer arrives in words.</p>
+    <p><b>There is no default.</b> Do not assume the old path is removed, and do not assume it is kept. What the legacy logic is, what is lost without it, and which way you would go are asked <b>in the question round, before the board is published</b>, and the answer is on the task's row. Heading 7 states that answer. A task whose Legacy is undecided is not on this board.</p>
   </div>
 
   <div class="note">
@@ -376,7 +376,7 @@
     <h3>PRs — every job lands in one, shown on the PRs tab</h3>
     <p>The <em>PRs</em> tab lists every PR with its shape: <b>Independent</b> (branches from the base and targets it, merge in any order) or <b>Stacked</b> (targets the PR below it, merge in order). A stack exists only because the user chose one. Before the first edit of any PR, check you are on its branch with a clean tree; if another PR's work is still uncommitted, stop and say so. In a stack, implement jobs in PR order.</p>
     <p>When a PR's last job is reviewed, stacked or not, write its <b>whole config on the PRs tab</b>, the <b>body</b> included, and republish. <b>The body never goes in chat</b>; it lives here behind its Copy button. In chat, give the short fields, each in its own block (head branch, target branch, title, draft — yes unless every PR it builds on is merge-ready or the stack is complete, merge method, labels or reviewers only if the repo shows them), the <b>next branch name</b>, and a pointer to the body on this tab. <b>You never branch, commit, push or open the PR yourself</b> unless the user says so, in words.</p>
-    <p>Stacks only: <b>when the base moves, leave the stack alone</b> unless the base probe shows a conflict, the repo requires up-to-date branches, or a PR landed by squash or rebase merge. Then sync by <b>merging, never rebasing</b>, one link at a time, bottom-up, each through <code>youssef-skills:merge-assistant</code>: a full run for the base into PR 1, then a propagation run per PR above it. Every link is verified (dry-run, clean-but-dangerous scan, the PR's suite and its job-review checks) and committed by the user before the next starts.</p>
+    <p>Stacks only: <b>when the base moves, leave the stack alone</b> unless the base probe shows a conflict, the repo requires up-to-date branches, or a PR landed by squash or rebase merge. Then sync by <b>merging</b> (or rebasing, only when the user asks), <b>one PR at a time</b>, bottom-up, each through <code>youssef-skills:merge-assistant</code>: a full run for the base into PR 1, then a propagation run per PR above it. Every link is verified (dry-run, clean-but-dangerous scan, the PR's suite and its job-review checks) and committed by the user before the next starts. <b>A PR in the middle that needs a new commit</b> is synced first, then gets the commit, and only then does the sync go on to the PRs above it.</p>
   </div>
 
   <div class="note">
@@ -385,8 +385,8 @@
   </div>
 
   <div class="note">
-    <h3>Check the lane before you plan</h3>
-    <p>Name every directory this job's fixes reach. Before editing anything outside the lane you were given, <b>ask once per job</b>, naming every directory. Do not implement across the boundary because the fix is small — small is not the criterion.</p>
+    <h3>Stay in the cleared lane</h3>
+    <p>Every directory each job reaches outside the lane you were given was asked in the question round, and the answer is on the task rows. Never edit outside what the answers cleared. Do not implement across the boundary because the fix is small — small is not the criterion.</p>
   </div>
 
   <div class="note">
@@ -528,16 +528,16 @@
      independent PR's "## Stack" line says it is independent.
      Body: fill at handoff. The short fields match what was given in chat; the body is
      written ONLY here, never in chat. HTML-escape it (& < >) inside the <pre> so Copy
-     gives the exact Markdown. Never add `open` to a .cfg <details>: the script collapses
-     every PR config and expands only the last completed PR's (the last li that is
-     p-ready, p-opened or p-merged), so it moves on by itself when the next PR is done.
+     gives the exact Markdown. Never add `open` to a .cfg <details>: every PR config
+     stays collapsed, for every PR and every status, Ready and Merged included. The
+     script also collapses any that arrive open.
      Base line: for a stack, the latest base probe ("N commits ahead of PR 1 · merges
      cleanly — no action needed"); add class "warn" to .probe when it reports a conflict.
      For an independent PR, the base commit it branches from.
      Sync line: the base commit the PR is synced with and the last sync (what was merged,
      decisions, checks). Add class "warn" while a sync is needed or a cascade stopped here. -->
 <div class="panel" id="p-prs" role="tabpanel" aria-labelledby="tab-prs" hidden>
-  <p class="lede">Every job lands in one PR. <strong>Stacked</strong> PRs target the PR below them and are merged in order; <strong>independent</strong> PRs branch from the base, target it, and merge in any order. Land every PR with a <strong>merge commit</strong>. A stack is kept in sync by <strong>merging, never rebasing</strong>, and only when the base probe or a squash landing calls for it. The config under each PR is what to paste when you open it; every field has its own copy button.</p>
+  <p class="lede">Every job lands in one PR. <strong>Stacked</strong> PRs target the PR below them and are merged in order; <strong>independent</strong> PRs branch from the base, target it, and merge in any order. Land every PR with a <strong>merge commit</strong>. A stack is kept in sync <strong>one PR at a time</strong>, by <strong>merging</strong> (rebasing only when the user asks), and only when the base probe or a squash landing calls for it. The config under each PR is what to paste when you open it; every field has its own copy button.</p>
 
   <section class="group">
     <div class="ghead"><h2>Overview</h2><span class="rule"></span><span class="n">3 PRs · 2 stacked · 1 independent</span></div>
@@ -847,16 +847,11 @@ Start at file.py, then other_file.ts.
       });
     });
 
-    // PR configs: all collapsed, except the last completed PR in stack order
-    // (Ready, Opened or Merged). Republishing with the next PR done moves it on.
-    var prs = Array.prototype.slice.call(document.querySelectorAll(".stack > li"));
-    var lastDone = null;
-    prs.forEach(function (li) {
-      var cfg = li.querySelector("details.cfg");
-      if (cfg) cfg.open = false;
-      if (/\bp-(ready|opened|merged)\b/.test(li.className) && cfg) lastDone = cfg;
+    // PR configs: every one starts collapsed, whatever its status. The reader
+    // opens the one they need.
+    Array.prototype.slice.call(document.querySelectorAll("details.cfg")).forEach(function (cfg) {
+      cfg.open = false;
     });
-    if (lastDone) lastDone.open = true;
 
     // Copy buttons on the Stack tab: each copies the .cfg-v in its own row.
     // Clipboard access can be blocked in an embedded page, so fall back to

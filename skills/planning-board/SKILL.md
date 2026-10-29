@@ -36,6 +36,12 @@ issues (when any task comes from one) --> tasks          shown on the Issues tab
 board has an **Issues tab** tracing every issue to its tasks, jobs and PRs, and the Jobs
 and Queue tables carry an **Issue** column. See *Issues*.
 
+**Questions first, board second.** Every question the plan needs is asked in **one round,
+before the board exists**: which tasks are in, every Legacy decision, every choice between
+approaches, every lane exception, the stack. The board is built from the answers, so
+**every task on it is ready to implement: the only thing it still needs from the user is
+approval.** A task that still needs an answer is not on the board yet.
+
 **The rule: nothing is implemented until the user says yes, in words, to that specific
 task** — naming the task, or naming the job or PR that contains it. A thumbs-up on another
 task or job, silence, or your own confidence that the fix is obvious are not approval.
@@ -48,8 +54,9 @@ scope*.
 ## When to use
 
 - The user says "start a job", "onto the next task", "onto the next job", "onto the next
-  PR", "let's work on X", "plan this out". No board yet → build one (steps 1–3), then
-  present at the scope they asked for (*Plan scope*). A board exists → take the next
+  PR", "let's work on X", "plan this out". No board yet → investigate, ask every question
+  in one round, then build the board (steps 1–3b), then present at the scope they asked
+  for (*Plan scope*). A board exists → take the next
   task, job or PR from its Jobs tab. A board with no Jobs tab (made before jobs) → run step 3 on
   it first, adding the Jobs panel and the Job column from `template.html`. A board with
   jobs but no PRs tab (or the older Stack tab) gets step 3b at the next job boundary,
@@ -67,12 +74,18 @@ work already approved on an existing board (update that board instead of making 
 user says "start a job" / "take the next job"
   |
   v
-1 INVESTIGATE (read-only) --> 2 PUBLISH SKELETON --> 3 GROUP the Queue into jobs
-  |                            (tasks Open)          (Jobs tab, job on each Queue row)
+1 INVESTIGATE (read-only) + DRAFT the tasks, jobs and PR plan (nothing published)
+  |
   v
-3b PR PLAN: put every job in a PR, fill the PRs tab (shape + config per PR).
-   One PR or independent PRs: say the layout in one line and go on.
-   A stack (only if it qualifies): propose it, draw it, STOP for yes / no / changes.
+2 ASK EVERY QUESTION, IN ONE ROUND --> STOP until every one is answered
+  (task list, Legacy, approach choices, lanes, the stack; follow-ups in one more round)
+  |
+  v
+3 PUBLISH THE BOARD from the answers: every task ready, decisions on its row
+  (Jobs tab, job on each Queue row)
+  |
+  v
+3b PR PLAN on the PRs tab (shape + config per PR), the stack as the user answered
   |
   v
 4 PRESENT at the scope the user asked for (Plan scope):
@@ -113,12 +126,19 @@ what the user told you — if the premise does not hold, say so instead of propo
 Record each task's **origin**: the issue and the part of it the task covers, or, with no
 issue, where it came from (a side catch while checking task NN, the user's request on a
 date, a PR review). Read each issue's title and state from the tracker
-(`gh issue view <n> --json title,state`), never from memory.
+(`gh issue view <n> --json title,state`), never from memory. Investigate **every** task
+deeply enough to write its proposal, because its questions must surface now, not when its
+turn comes. Then draft, without publishing: the task list, the jobs (*Forming jobs*) and
+the PR plan (*PR plan*). Collect every question the draft leaves open.
 
-**Step 2 — publish the skeleton** if the investigation runs longer than a couple of tool
-calls, so the user has something to watch. Tasks start at `Open`. Give them the link once.
+**Step 2 — ask every question, in one round.** One message, before anything is
+published (*The question round* below). Stop until every question has an answer. If an
+answer opens a new question, ask it, and anything else it touches, in one more round.
+Never publish the board with a question still open.
 
-**Step 3 — group.** Split the Queue into jobs using the rules in *Forming jobs* below.
+**Step 3 — publish the board.** Build it from the answers: the task list as decided, and
+each task's decisions on its row (*The question round*). Tasks start at `Open`. Give the
+user the link once. Split the Queue into jobs using the rules in *Forming jobs* below.
 Fill the Jobs tab and the Job column on the Queue. Rank jobs, not just tasks. Effort and
 risk for jobs not yet presented are provisional — mark them `~M · ~Low` until their
 proposals are written. If any task comes from an issue, fill the Issues tab and the Issue
@@ -126,26 +146,24 @@ columns in the same publish (*Issues*).
 
 **Step 3b — PR plan.** Put every job in a PR and fill the PRs tab, following *PR plan*
 below. Each PR gets its shape (`Independent` or `Stacked`) and its config from the start.
-For one PR or independent PRs, say the layout in one line in chat and go on; the user
-may change it. If the plan also passes *Does it qualify*, propose the stack and stop for
-the user's answer before presenting job 1. A stack changes the order jobs are worked in,
-so it is settled first. While it waits, draw it as one chain labelled "Proposed stack:
-awaiting your yes".
+For one PR or independent PRs, say the layout in one line in the question round; the
+user may change it. If the plan also passes *Does it qualify*, the stack proposal is one
+of the round's questions, so it is settled before the board is published.
 
 **Step 4 — present at the user's scope** (*Plan scope*): one task, one job, or every job
 in a PR. A job starts with the job header (below), then one proposal per task in it, in
-chat, under the seven headings. Never one proposal covering several tasks — the board
+chat, under the seven headings. Every decision in it was made in the question round, so
+the proposal states the answers and asks nothing. Never one proposal covering several tasks — the board
 tracks tasks, and a merged plan leaves the others with no recorded decision. In the same
 turn, set every presented task to `Plan submitted` with its effort and risk letters on
 the row, and each job whose tasks are all presented to `Plan submitted`.
 
 **Step 5 — stop.** The user may approve a whole PR or job in one reply ("approve PR 1",
-"approve job B") or task by task. Approving a PR or job approves its tasks; it does
-**not** answer their Legacy
-questions — each still needs its own answer before that point is implemented. A task they reject or park leaves the job (back to `Open`, or `Deferred`)
-and the job goes ahead without it; re-check that the rest still makes sense together.
-Ask for the lane exception here too (below), once per job, naming every directory the
-job reaches.
+"approve job B") or task by task. Approval is the only thing left to ask here: Legacy,
+lanes and approach choices were answered in the question round. A task they reject or
+park leaves the job (back to `Open`, or `Deferred`) and the job goes ahead without it;
+re-check that the rest still makes sense together. If the user changes a decision while
+approving, update the task's row and proposal before implementing it.
 
 **Step 6 — implement one job.** All of the job's approved tasks, in the order the job
 header gave; in task scope, the one approved task. **Never more than one job before the
@@ -167,6 +185,44 @@ job / next PR to plan more."
 or independent, hand the PR over in the shape in *PR handoff* below, in the same turn as
 the job review.
 
+## The question round
+
+Every question the plan needs, **asked once, before the board is published**. It is the
+only time anything but approval is asked of the user.
+
+**What goes in it**, every item the draft leaves open, numbered, grouped by task:
+
+1. **The task list.** Each task in one line with its origin. Say which you would leave
+   out (refuted, by design, out of scope) and why. The user confirms, adds or drops.
+2. **Legacy**, per task (*Heading 7*): what is in reach, what is lost without it, your
+   recommendation.
+3. **Approach choices.** Wherever two fixes are defensible: your recommendation, the
+   alternative, and what changes with the answer.
+4. **Lanes.** Every directory outside the lane you were given that any job reaches, per
+   job.
+5. **The PR plan.** The layout in one line, and the stack proposal when it qualifies
+   (*Stacked PRs*).
+6. **Anything else** a task would otherwise stop on: a value to use, an owner to ask, a
+   behaviour to keep.
+
+One message, in the sha3bolly style, each question with your recommendation so the user
+can answer "go with your picks". `AskUserQuestion` fits only when four questions or fewer
+cover everything. A plain numbered list is otherwise right.
+
+**Ready means** the fix is one approach with no "or", every file it edits is named, its
+lane is cleared, its Legacy is decided, and its verification is named. A task the user
+cannot answer for yet (waiting on another team, a product call) stays off the board; say
+in chat what it waits on, and it joins the board through its own round when that
+arrives.
+
+**Record the answers on the board.** Each task's row on the Tasks tab carries its
+decisions in its Evidence / decision cell ("Legacy: drop (user, 2026-10-29) · lane: also
+`web/` · approach: guard in the handler"), and the proposal states them.
+
+**Later tasks get a round too.** A task found after the board exists (a side catch, a
+review comment) gets its questions asked before it is added. An existing board with tasks
+still carrying open questions gets one round for all of them at the next job boundary.
+
 ## Plan scope
 
 What the user says sets how much is **planned** at once. It never changes how much is
@@ -174,9 +230,9 @@ What the user says sets how much is **planned** at once. It never changes how mu
 
 | The user says | Step 4: present | Step 6: implement after approval, then stop |
 |---|---|---|
-| "onto the next task", "next task" | **One task**: the next task (below). One context line (`Task 03 · Job B, 2 of 3, after 01 · files: …`), then its proposal and its lane ask. | That task. Its review, then stop. |
+| "onto the next task", "next task" | **One task**: the next task (below). One context line (`Task 03 · Job B, 2 of 3, after 01 · files: …`), then its proposal. | That task. Its review, then stop. |
 | "onto the next job", "next job", "start a job", "take the next job" | **One job**: the job header, then one proposal per task. | That job. Its review, then stop. |
-| "onto the next PR", "next PR", "plan the whole PR" | **One PR**: a line naming the PR and its jobs, then, per job in PR order, the job header and one proposal per task. Ask for every job's lane exception in the same message. | **The PR's first job only.** Its review, then stop. |
+| "onto the next PR", "next PR", "plan the whole PR" | **One PR**: a line naming the PR and its jobs, then, per job in PR order, the job header and one proposal per task. | **The PR's first job only.** Its review, then stop. |
 
 **What "next" is.** Work stays inside the current PR, in PR plan order, then each job's
 header order, until that PR's handoff; then the next PR in the plan. The next task, job
@@ -192,8 +248,8 @@ user last used on this board, a job if none, and name it in the first line ("Pla
 the next job, Job C. Say next task or next PR to change it.").
 
 **Approval covers only what was presented.** "Approve PR 2" approves the PR 2 tasks whose
-proposals the user has seen, not the rest. One answer may cover several Legacy questions
-when it names them or says "all" ("all legacy: drop it").
+proposals the user has seen, not the rest. In the question round, one answer may cover
+several questions when it names them or says "all" ("all legacy: drop it").
 
 **The cap: one job, then the user reviews.** After every job (every task, in task scope),
 give the review and stop. The next job is implemented only when the user, having had the
@@ -205,9 +261,10 @@ job of the PR still waits for it. In task scope, the next task waits for "next t
 **Only the user lifts the cap**, explicitly and only as far as they say. "Implement all of
 PR 1 without stopping" covers PR 1's approved jobs, not PR 2. Even then, work job by job:
 the board moves per job, each job gets its own job review, and they are handed back in job
-order in one message at the end. A task whose Legacy or lane question is still unanswered
-is held at `Approved`, with any task that depends on it, and the rest goes on; the final
-message lists what was held and why. A failed branch check stops the whole run.
+order in one message at the end. A question that surfaces during implementation was
+missed in the round: hold that task at `Approved`, with any task that depends on it, and
+the rest goes on; the final message asks it and lists what was held. A failed branch
+check stops the whole run.
 
 **Task scope inside a job.** The job header's order still holds. When a task closes out its
 job (the last one to reach Fixed), the review also gives the job's one-line review for
@@ -228,7 +285,9 @@ Keep a job reviewable in one sitting:
 - **About five tasks or fewer**, and a diff a reviewer can read top to bottom.
 - **A High-risk or L-effort task is a job of its own.** Its rollback plan and real-data
   check must not be buried in someone else's diff.
-- **A task waiting on a design decision** stays out of a job until the decision is made.
+- **A task waiting on a decision** is not on the board. Design decisions are asked in
+  the question round; one that waits on someone else keeps the task off the board
+  (*The question round*).
 - **A task that fits nowhere is a job of one.** Never force a group.
 
 **Rank jobs** by the highest-ranked task in each. Pulling a lower-ranked task forward
@@ -385,7 +444,8 @@ main
          └─ PR 3  auth-cleanup/3-ui-states   Jobs D, E   tasks 06 | 07 08
 ```
 
-4. **Ask**: stack it like this, change the cuts, or keep it as one change. No default.
+4. **Ask**, in the question round: stack it like this, change the cuts, or keep it as
+   one change. No default.
 
 Branch names follow the repo's convention, which you can see in `git branch -a` and recent
 merges. With no convention, use `<topic>/<n>-<slug>`. PR 1's branch can be the branch the
@@ -396,7 +456,7 @@ If they say no, record "No stack — declined" in the header meta, redraw those 
 `Independent` PR on the PRs tab (or the split the user asked for instead), and don't ask
 again unless the plan grows by half or more. If they say yes, mark those PRs
 `Stacked` on the PRs tab, redraw them as one chain with each PR under the one it targets,
-update their targets and create commands, and present PR 1's first job.
+update their targets and create commands, and publish the board with the stack on it.
 
 ### Working a stack
 
@@ -420,11 +480,11 @@ when one of these is true:
 - the stack needs something that landed on the base,
 - a PR in the stack landed by squash or rebase merge (see the table).
 
-**Sync by merging, never by rebasing.** A merge rewrites nothing, so there is no
-force-push and review comments stay attached. Every sync merge goes through
-`youssef-skills:merge-assistant` in its *Stack mode*. Load it and follow it. If the user
-asks for a rebase instead, give the `git rebase --update-refs` command with backup tags.
-You run nothing.
+**Sync by merging, one PR at a time.** A merge rewrites nothing, so there is no
+force-push and review comments stay attached. Rebase only when the user asks for it, in
+words, and then still one PR at a time: never one command that rebases the whole stack
+(`git rebase --update-refs`). Every sync link, merge or rebase, goes through
+`youssef-skills:merge-assistant` in its *Stack mode*. Load it and follow it.
 
 **The base probe** is read-only, so run it at every branch check:
 
@@ -443,17 +503,28 @@ to sync. On older git, use merge-assistant's dry-run in a detached worktree inst
 | The base moved and a sync is needed | 1. **Base merge**: merge the base into PR 1, a full merge-assistant run. 2. **Propagate** bottom-up: PR 1 into PR 2, PR 2 into PR 3, each a stack-mode propagation run. |
 | PR N landed with a merge commit | Retarget PR N+1 to the base. GitHub does this itself when PR N's branch is deleted on merge. Nothing to merge. |
 | PR N landed by squash or rebase merge | The base now has PR N's changes under new commits, so PR N+1's diff shows them again. Merge the base into PR N+1 as a propagation run, where the known change is PR N as it landed. Then retarget. Keep PR N's branch until this is done, because the run compares against it. |
-| Review changed PR N after PR N+1 started | Propagate PR N into PR N+1, then upward. The known change is PR N's new commits. |
+| Review changed PR N after PR N+1 started | If PRs below N, or N itself, are due a sync, sync up to and including PR N first (*A new commit mid-stack*). Then add the commit to PR N, then propagate PR N into PR N+1 and upward. The known change is PR N's new commits. |
 | The user moves the stack to a new base | Base merge of the new base into PR 1. The user retargets PR 1, then propagate. |
 
-- **One link at a time, bottom-up.** A link is done when its merge is verified and the
-  user has committed it. The user commits, and you never push. Don't start the next link
-  before that.
+- **One PR at a time, bottom-up**, for merges and rebases alike. A link is done when its
+  merge (or rebase) is verified and the user has committed it. The user commits and
+  pushes; you never push. Don't start the next link before that.
+- **A new commit mid-stack.** When a PR in the middle needs a new commit (a review fix,
+  a fix the sync's own checks called for, new work), the order is fixed:
+  1. sync every PR below it and then that PR itself, one link at a time, each verified
+     and committed;
+  2. add the new commit to that PR, as its own commit on top of the sync, verified and
+     committed;
+  3. then sync the PRs above it, one link at a time.
+  Never put the commit on a PR that is still waiting for its sync, and never sync a PR
+  above it before the commit is in. Folding the fix into the sync commit is wrong too:
+  the sync stays one commit and the fix another.
 - **Verify every link, even the easy ones.** Knowing what changed shortens the analysis,
   not the checks. Run the dry-run, the clean-but-dangerous scan, the PR's whole suite, and
   the task checks from that PR's job reviews, and quote what each printed.
 - **Stop the cascade on any failure** and say which link it stopped at. Links above it
-  stay as they were.
+  stay as they were. If the fix is a new commit in that PR, it follows *A new commit
+  mid-stack*: the sync is committed, then the fix, then the cascade goes on.
 - **Recommend merge commits for landing.** Every PR config carries "Merge method: merge
   commit". A squash forces a propagation run on every PR above it.
 - **Board, same turn.** Each sync updates the PR's sync line on the PRs tab: the base
@@ -575,7 +646,9 @@ kept. Name the trade-off and hand it over:
 2. **What we lose without it** — what breaks, and who sees it. "Chats summarised before
    the June change show no summary" is an answer; "some old data" is not.
 3. **Your recommendation** — support it or drop it, and one sentence on why.
-4. **Ask.** The user answers. Nothing is implemented on this point until they do.
+4. **Ask, in the question round.** The user answers before the board is published, and
+   the proposal's Legacy heading states that answer. Nothing is implemented on this point
+   without one.
 
 "None — there is no legacy logic in reach" is a fine answer. "Not sure" is not; you read
 the file, so you know.
@@ -629,9 +702,10 @@ the board and the code disagree, everyone downstream is working from the wrong m
 
 ## Two standing checkpoints
 
-**Lane / boundary.** Name every directory the job's fixes reach. Before editing anything
-outside the lane you were given, **ask once per job**, naming every directory. A small fix
-is not an exception; small is not the criterion.
+**Lane / boundary.** Name every directory each job's fixes reach. Anything outside the
+lane you were given is **asked in the question round**, per job, naming every directory.
+Never edit outside the lane the answers cleared. A small fix is not an exception; small
+is not the criterion.
 
 **Never commit.** Implementation lands **uncommitted** in the working tree. No
 `git commit`, `git push`, `gh pr create`, amend or tag unless the user says so, in words —
@@ -673,6 +747,10 @@ the link once, in one line.
 ## Red flags — stop
 
 - About to edit an implementation file for a task that is not `Approved`.
+- Publishing the board, even a skeleton, before every question in the round is answered.
+- A task on the board that still needs an answer from the user, or a proposal that asks
+  one. Approval is the only thing a proposal asks for.
+- Asking a question at Step 5, or at a job's start, that the round could have asked.
 - Presenting a whole job when the user said "next task", or one job when they said "next
   PR".
 - Implementing a second job (or a second task, in task scope) before the user has had the
@@ -705,11 +783,15 @@ the link once, in one line.
   with no Issue cell. A task with no issue still gets its origin, under No issue.
 - `Closes #n` in a PR body while part of #n is open, undecided, or in another PR.
 - An issue's state or title written from memory instead of read from the tracker.
-- An `open` attribute on a PR config `<details>`. The page script expands only the last
-  completed PR's config; every other one stays collapsed.
+- An `open` attribute on a PR config `<details>`, or a config expanded for any PR. Every
+  PR config stays collapsed, whatever its status.
 - Draft set to `no` while a PR it builds on still needs changes and the stack is not
   complete, or left at `yes` after it became merge-ready without telling the user.
-- Rebasing or force-pushing a stack branch. Syncs are merges, through merge-assistant.
+- Rebasing a stack branch when the user did not ask for a rebase, or rebasing the whole
+  stack in one command (`--update-refs`). Syncs are merges by default, one PR at a time,
+  through merge-assistant.
 - Syncing the stack because main moved, when the probe is clean and nothing needs it.
 - Skipping a propagation run's checks because "we already know what changed".
 - Starting the next link of a sync cascade before the previous one is verified and committed.
+- Adding a commit to a PR in the middle of the stack before that PR is synced, or syncing
+  the PRs above it before the commit is in.

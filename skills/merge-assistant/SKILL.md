@@ -420,10 +420,11 @@ If they choose to commit, use `git commit` (default merge message in editor) or 
 
 ## Stack mode (called from planning-board)
 
-`youssef-skills:planning-board` keeps a stacked PR in sync by **merging, never
-rebasing**, and every one of those merges runs through this skill. It tells you the
-**link**: the source branch, the target branch, and which kind of run it is. One link per
-run, bottom-up. Everything above still applies unless this section says otherwise.
+`youssef-skills:planning-board` keeps a stacked PR in sync **one PR at a time**, by
+**merging**, or by **rebasing** only when the user asked for a rebase. Every link runs
+through this skill. The caller tells you the **link**: the source branch, the target
+branch, which kind of run it is, and merge or rebase. One link per run, bottom-up.
+Everything above still applies unless this section says otherwise.
 
 **Base merge**: the base (`origin/main`, or a new base) into PR 1's branch. **It is a full
 run with no shortcuts.** The base's changes are unknown, so all three analysts run and the
@@ -465,11 +466,34 @@ cheaper. **The checks are not cheaper.**
    from that PR's job reviews** on the board, each quoted. A propagation run that skips
    these is not verified.
 
-For both kinds: commit only when the user says so, as in Phase 2. Never push; a merge
+**Rebase links** (only when the user asked for a rebase). Phase 1 is the same. In
+Phase 2, the backup ref is taken on the target branch (PR N+1) before anything else, and
+the rebase moves only that one branch:
+
+```bash
+git update-ref refs/backup/before-rebase-<branch>-$(date +%Y%m%d-%H%M%S) <branch>
+git rebase --onto <source-branch> <old-source-tip> <branch>
+```
+
+`<old-source-tip>` is where PR N's branch was before its own rebase in this cascade (its
+backup ref), or the merge-base when PR N was not rebased. Use it in place of the
+merge-base in step 1 above too, because after a rebase the merge-base no longer marks the
+last sync. Resolve each stop with the decision log as in Steps 4 and 5, `git add`, then
+`git rebase --continue`. Never `--update-refs`, and never a rebase that moves more than
+this one branch. Step 6's checks run on the rebased tip. The user force-pushes it, with
+`git push --force-with-lease`.
+
+**A new commit mid-stack.** If PR N+1 needs a commit of its own (a review fix, a fix this
+run's checks called for, new work), the sync is finished and committed first. The new
+commit then goes on top as its own commit, verified and committed, and only after that
+does the caller start the link above. Never fold the fix into the merge commit, and never
+start the next link with the fix still pending.
+
+For every link: commit only when the user says so, as in Phase 2. Never push; a merge
 needs no force-push, so the user pushes normally. Finish with one line per link for the
-board's sync line: what was merged, the base commit it is now synced with, the decision
-count, and the checks with their results. If a check fails, stop and say so. The caller
-does not start the next link.
+board's sync line: what was merged or rebased onto, the base commit it is now synced
+with, the decision count, any commit added after the sync, and the checks with their
+results. If a check fails, stop and say so. The caller does not start the next link.
 
 ---
 

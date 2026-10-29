@@ -46,7 +46,8 @@ proposal, board updates and "never commit" rule apply here unchanged.
    - If the user's request already said to fix the review ("fix and
      resolve"), that approves the findings that hold. Implement those.
    - A refuted finding, a design change, or a Legacy question still needs the
-     user's answer first.
+     user's answer first. Ask them all in one round, before the findings go on
+     the board (planning-board's *question round*).
 
 4. **Fix, test first.** For each finding, write a test that fails on the
    current code, then fix it, then run the PR's whole suite and build. Update
